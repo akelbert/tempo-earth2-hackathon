@@ -1,0 +1,32 @@
+{
+  "created_utc": "2026-08-18T18:35:01+00:00",
+  "collection": "SYNTHETIC (not TEMPO)",
+  "version": "n/a",
+  "region": "northeast",
+  "bbox": [
+    -76.0,
+    38.5,
+    -70.0,
+    43.5
+  ],
+  "scans": [
+    "2026-06-15T16:00:00",
+    "2026-06-15T17:00:00",
+    "2026-06-15T18:00:00",
+    "2026-06-15T19:00:00"
+  ],
+  "variables": [
+    "cloud_fraction",
+    "no2_strat",
+    "no2_trop",
+    "qa_flag"
+  ],
+  "primary_variable": "no2_trop",
+  "shape": {
+    "time": 4,
+    "lat": 250,
+    "lon": 300
+  },
+  "store": "/Users/nmearl/code/tempo-earth2-hackathon/data/tempo/northeast.zarr",
+  "note": "Synthetic test data. Three Gaussian plumes advected by a constant 7.5 m/s eastward, -3.0 m/s northward wind. Not science."
+}
