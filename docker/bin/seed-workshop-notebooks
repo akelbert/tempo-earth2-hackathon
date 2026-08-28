@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Seed the released notebooks into the attendee home, once.
+#
+# Copies the immutable reference set into ${WORKSHOP_WORK_DIR}/notebooks the
+# first time a given release is seen, and records the release so later starts
+# are no-ops. Attendee edits are never overwritten; use
+# restore-workshop-notebooks to get a clean copy of a single notebook back.
+set -euo pipefail
+
+: "${WORKSHOP_REFERENCE_DIR:=/opt/earth2/notebooks}"
+: "${WORKSHOP_WORK_DIR:=${HOME}/work}"
+: "${WORKSHOP_RELEASE:=unversioned}"
+
+target="${WORKSHOP_WORK_DIR}/notebooks"
+stamp="${WORKSHOP_WORK_DIR}/.seeded-${WORKSHOP_RELEASE}"
+
+if [ ! -d "${WORKSHOP_REFERENCE_DIR}" ]; then
+    echo "[seed] no reference notebooks at ${WORKSHOP_REFERENCE_DIR}" >&2
+    exit 0
+fi
+
+if [ -f "${stamp}" ]; then
+    exit 0
+fi
+
+mkdir -p "${target}"
+
+# --ignore-existing is what makes this safe to run on every start: new notebooks
+# from a later release appear, edited notebooks are left alone.
+rsync -a --ignore-existing \
+    --exclude '.ipynb_checkpoints' \
+    "${WORKSHOP_REFERENCE_DIR}/" "${target}/"
+
+date -u +%Y-%m-%dT%H:%M:%SZ > "${stamp}"
+echo "[seed] workshop notebooks seeded into ${target} (release ${WORKSHOP_RELEASE})" >&2

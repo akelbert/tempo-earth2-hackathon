@@ -1,0 +1,53 @@
+# Build the Earth-2 Lab image on Cloud Build.
+#
+# The base image is large and the dependency resolution is slow; building on a
+# high-CPU machine with a persistent disk beats building on a laptop, and it
+# produces an amd64 image without emulation.
+#
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_RELEASE=rc1 .
+#
+# Note the machine type and timeout: a cold build of this image takes well over
+# the 10-minute default.
+
+substitutions:
+  _REGION: us-central1
+  _REPOSITORY: earth2
+  _IMAGE: earth2-lab
+  _RELEASE: dev
+  _E2S_VERSION: "0.17.0"
+  _PREFETCH_MODEL: "false"
+
+options:
+  machineType: E2_HIGHCPU_32
+  diskSizeGb: 500
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 5400s
+
+images:
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_RELEASE}"
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=EARTH2STUDIO_VERSION=${_E2S_VERSION}
+      - --build-arg=PREFETCH_MODEL=${_PREFETCH_MODEL}
+      - -f=docker/Dockerfile
+      - -t=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_RELEASE}
+      - .
+
+  # Record the resolved digest. The design requires deploying by digest, and
+  # this is where the digest becomes a fact rather than an intention.
+  - id: record-digest
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker image inspect \
+          --format='{{.Id}}' \
+          ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_RELEASE} \
+          | tee /workspace/image-id.txt

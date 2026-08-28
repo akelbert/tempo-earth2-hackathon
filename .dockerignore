@@ -1,0 +1,23 @@
+# Keep the build context small. The base image is already ~20 GB; there is no
+# reason to add staged TEMPO granules or a local virtualenv on top of it.
+.venv/
+.git/
+.claude/
+__pycache__/
+*.pyc
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# Data and outputs never belong in the image.
+data/
+outputs/
+*.zarr/
+*.nc
+
+# Documentation and infrastructure that the runtime does not need.
+*.md
+!README.md
+terraform/
+helm/

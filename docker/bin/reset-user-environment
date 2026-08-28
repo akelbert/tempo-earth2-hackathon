@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Return the Python environment to the released baseline.
+#
+# This is the second of the two recovery actions the design calls for, and it is
+# deliberately distinct from restore-workshop-notebooks. Use this one when a
+# `pip install --user` has shadowed the released numpy/xarray/widget stack and
+# imports or widgets have stopped working.
+#
+#   reset-user-environment            # show what would be moved
+#   reset-user-environment --apply    # move it
+#
+# Nothing is deleted. User package directories, user kernels and documented
+# workshop virtual environments are moved into a timestamped recovery directory
+# in the home volume, where the attendee can retrieve anything they needed.
+# Notebooks, data and generated outputs are never touched.
+set -euo pipefail
+
+: "${WORKSHOP_WORK_DIR:=${HOME}/work}"
+
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+recovery="${HOME}/.env-recovery/${stamp}"
+apply=false
+
+for arg in "$@"; do
+    case "${arg}" in
+        --apply) apply=true ;;
+        -h|--help)
+            sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' >&2
+            exit 0
+            ;;
+        *) echo "[reset] unknown option: ${arg}" >&2; exit 1 ;;
+    esac
+done
+
+targets=()
+python_user_base="$(python -c 'import site; print(site.USER_BASE)' 2>/dev/null || echo "${HOME}/.local")"
+
+for candidate in \
+    "${python_user_base}/lib" \
+    "${python_user_base}/bin" \
+    "${HOME}/.local/share/jupyter/kernels" \
+    "${WORKSHOP_WORK_DIR}/.venv" \
+    "${HOME}/.venv"
+do
+    # Only offer to move directories that actually contain something. The
+    # container entrypoint creates ~/.local/bin so that user-installed scripts
+    # are runnable; listing that empty directory here would make a healthy
+    # environment look like a damaged one.
+    if [ -d "${candidate}" ]; then
+        [ -n "$(ls -A "${candidate}" 2>/dev/null)" ] && targets+=("${candidate}")
+    elif [ -e "${candidate}" ]; then
+        targets+=("${candidate}")
+    fi
+done
+
+if [ ${#targets[@]} -eq 0 ]; then
+    echo "[reset] nothing to reset: no user-installed packages, kernels or virtual environments found." >&2
+    echo "[reset] if imports are still failing, the problem is not a user install. Ask for help." >&2
+    exit 0
+fi
+
+echo "[reset] the following would be moved to ${recovery}:" >&2
+for target in "${targets[@]}"; do
+    printf '  %s\n' "${target}" >&2
+done
+
+if [ "${apply}" != true ]; then
+    echo >&2
+    echo "[reset] dry run. Re-run with --apply to move them." >&2
+    exit 0
+fi
+
+mkdir -p "${recovery}"
+for target in "${targets[@]}"; do
+    destination="${recovery}/$(echo "${target#${HOME}/}" | tr '/' '_')"
+    mv "${target}" "${destination}"
+    echo "[reset] moved ${target} -> ${destination}" >&2
+done
+
+# Reproducible caches only; never the model cache, which is expensive to refill.
+rm -rf "${HOME}/.cache/pip" "${HOME}/.cache/uv" 2>/dev/null || true
+
+cat >&2 <<EOF
+
+[reset] done. The released environment is active again.
+
+Next step: restart your kernel (Kernel > Restart Kernel), or stop and start your
+server from the Hub control panel if a terminal command is still misbehaving.
+
+Anything you had installed is in ${recovery} - nothing was deleted.
+EOF

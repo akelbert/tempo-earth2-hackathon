@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Restore a clean copy of one or all workshop notebooks.
+#
+#   restore-workshop-notebooks                    # list what can be restored
+#   restore-workshop-notebooks 01_tempo_earth2_intro.ipynb
+#   restore-workshop-notebooks --all
+#
+# The attendee's current version is moved aside with a timestamp, never
+# deleted. Nothing else in the home directory is touched.
+set -euo pipefail
+
+: "${WORKSHOP_REFERENCE_DIR:=/opt/earth2/notebooks}"
+: "${WORKSHOP_WORK_DIR:=${HOME}/work}"
+
+target="${WORKSHOP_WORK_DIR}/notebooks"
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+backup="${WORKSHOP_WORK_DIR}/.recovered/${stamp}"
+
+usage() {
+    cat >&2 <<EOF
+Restore released workshop notebooks from the read-only reference copy.
+
+  restore-workshop-notebooks <name.ipynb> [<name.ipynb> ...]
+  restore-workshop-notebooks --all
+
+Available notebooks:
+EOF
+    (cd "${WORKSHOP_REFERENCE_DIR}" && ls -1 *.ipynb 2>/dev/null | sed 's/^/  /') >&2
+    cat >&2 <<EOF
+
+Your current copy is moved to ${WORKSHOP_WORK_DIR}/.recovered/<timestamp>/
+rather than deleted. Nothing else in your home directory is changed.
+EOF
+}
+
+if [ $# -eq 0 ]; then
+    usage
+    exit 0
+fi
+
+if [ "${1}" = "--all" ]; then
+    mapfile -t names < <(cd "${WORKSHOP_REFERENCE_DIR}" && ls -1 *.ipynb 2>/dev/null)
+else
+    names=("$@")
+fi
+
+mkdir -p "${target}"
+
+for name in "${names[@]}"; do
+    source_file="${WORKSHOP_REFERENCE_DIR}/${name}"
+    if [ ! -f "${source_file}" ]; then
+        echo "[restore] no released notebook called '${name}'" >&2
+        usage
+        exit 1
+    fi
+    if [ -f "${target}/${name}" ]; then
+        mkdir -p "${backup}"
+        mv "${target}/${name}" "${backup}/${name}"
+        echo "[restore] your ${name} moved to ${backup}/${name}" >&2
+    fi
+    cp "${source_file}" "${target}/${name}"
+    chmod u+w "${target}/${name}"
+    echo "[restore] restored ${name}" >&2
+done
