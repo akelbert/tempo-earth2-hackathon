@@ -1,12 +1,11 @@
 # Earth-2 Lab
 
-The attendee container image and introductory notebook for the TEMPO × Earth-2
-hackathon (Harvard CfA, 14–16 September 2026).
+The attendee container image and notebooks for pairing a NASA TEMPO retrieval
+with an NVIDIA Earth2Studio forecast, built for the TEMPO × Earth-2 hackathon
+(Harvard CfA, 14–16 September 2026).
 
-This is the implementation of the container and notebook tracks described in
-[`tempo_earth2_jupyterhub_gke_design.md`](tempo_earth2_jupyterhub_gke_design.md).
-Terraform and the JupyterHub Helm release are separate and not in this
-repository yet.
+Terraform and the JupyterHub Helm release for the event cluster are tracked
+separately and will land here as that work matures.
 
 ---
 
@@ -32,12 +31,6 @@ The advection is deliberately simple and the notebook says so at length: one
 wind level stands in for a deep column, the wind is 6-hourly and 25 km against
 an hourly 2 km observation, and there is no chemistry. Those are the hackathon,
 not defects to hide.
-
-**This addresses the "TEMPO as a diagnostic dataset alongside model output"
-branch of the scientific scope gate.** If the science team decides TEMPO should
-instead be a model *input*, most of this repository still applies — the
-container, staging, caching and recovery paths do not change — but §5 of the
-notebook would be replaced.
 
 ---
 
@@ -147,11 +140,6 @@ built by advecting the plumes with the forecast's own 10 m wind. The notebook
 should score near **+0.98**. Anything else means the pipeline is broken, and you
 learn that in ten seconds instead of after a 40-minute staging download.
 
-The CPU image tells you whether the notebooks run, whether the widgets render,
-whether the Glue viewers behave in a real browser, and whether the seeding and
-recovery commands work. It tells you **nothing** about GPU memory, inference
-time, CUDA compatibility, or the NGC dependency resolution.
-
 ---
 
 ## Configuration
@@ -173,88 +161,3 @@ The model cache is the one that matters most. Earth2Studio defaults it to
 `~/.cache/earth2studio`, which on this deployment is a per-user persistent disk
 — fifty attendees would each download the same multi-gigabyte checkpoint onto
 their own volume. The image points it at `/opt/earth2/cache/models` instead.
-
----
-
-## What has and has not been verified
-
-Verified on this machine, all via `make check`:
-
-- The advection, regridding, grid-normalization, time-selection and plotting
-  code, against synthetic data with a known answer (28 checks in
-  `smoke_test.py`). The load-bearing one: a Gaussian plume is translated by a
-  known distance, and advecting the earlier field with the corresponding wind
-  must land the peak on the later one to within a grid cell.
-- **Both shipped notebooks execute end to end**, headless, through nbclient
-  (`test_notebook.py`). The introductory notebook is run against synthetic TEMPO
-  scans built by advecting plumes with the synthetic forecast's own 10 m wind,
-  and it must recover that wind: it scores **+0.985** at 10 m, degrading to
-  +0.798 and +0.600 for the scaled 100 m and 850 hPa winds. That confirms the
-  wind-level selector takes effect and the grids genuinely correspond.
-- The Dockerfile passes `docker buildx build --check` with no warnings, and both
-  base images (`nvcr.io/nvidia/pytorch:26.04-py3`, `ghcr.io/astral-sh/uv`)
-  resolve and are publicly pullable.
-- Package versions and the Earth2Studio extras list are current as of the pins
-  in `requirements-lab.txt`.
-- The TEMPO collection identifiers: `TEMPO_NO2_L3` **V04** is the ongoing
-  collection (`C3685896708-LARC_CLOUD`); V03 ended 2025-09-16.
-
-Additionally verified inside the built CPU image on an Apple Silicon Mac: both
-notebooks execute, JupyterLab serves, the container runs as non-root `jovyan`,
-notebook seeding does not overwrite an edited notebook on restart,
-`restore-workshop-notebooks` moves the attendee's version aside rather than
-deleting it, and `reset-user-environment` correctly reports "nothing to reset"
-on a clean environment.
-
-That pass caught one real bug, now fixed in both Dockerfiles and guarded by
-`make verify-shell`: a JupyterLab terminal starts a **login** shell, and
-`/etc/profile` rebuilds `PATH` from scratch, discarding the image's `ENV PATH`.
-Every recovery command was "command not found" at precisely the moment an
-attendee would have been told to run one. The fix is a `/etc/profile.d` snippet.
-
-Two cells are tagged `optional` and excluded from headless runs: the ipywidgets
-slider and the Glue viewers. Both need a live frontend to mean anything, and the
-Glue cell stalls a headless nbclient kernel even though its body raises
-`ImportError` in isolation. Nothing downstream uses either. `--with-optional`
-reproduces the stall; **both still need testing in a real browser**, which is
-the venue-network validation the design document already calls for.
-
-**Not** verified, because it needs an amd64 GPU host:
-
-- That the image actually builds. The Earth2Studio and lab-stack installs are
-  separate layers with a version-assertion step between them, so a resolver
-  conflict fails the build rather than silently downgrading torch — but that
-  assertion has not been exercised.
-- Peak GPU memory, model load time, warm inference time, or cache size for
-  FourCastNet. **These are the numbers the accelerator decision depends on**, and
-  they are what `00_environment_check.ipynb` plus a first notebook run will
-  produce.
-- Whether Earth2Studio can consume a *read-only* shared model cache without
-  attempting a write. The image sets the cache read-only for attendees; if that
-  fails, the fallback is a node-local writable cache populated before pods start.
-
-**Verified in a real browser, one confirmed defect found:** glue-jupyter's
-linked map/scatter views render and link correctly, but the map viewer's own
-selection tool crashes (`bqplot-image-gl`/`bqplot-gl` interaction-binding bug;
-no newer release exists to pin against). The scatter viewer's selection tool
-works and drives the same linked highlight on the map, so the notebook now
-directs attendees to select there instead. Glue is a required part of the
-guided path (see the design document), not an optional accessibility extra, so
-this workaround - not a matplotlib-only fallback - is the accepted mitigation
-until an upstream fix ships.
-
----
-
-## Open decisions this does not settle
-
-These belong to the scientific scope gate, not to the container:
-
-1. Whether TEMPO is a diagnostic dataset (what this notebook assumes), a model
-   input, or a linked visualization.
-2. Which model and pinned checkpoint. `FCN` is chosen here because it needs only
-   `nvidia-physicsnemo`, is served from Hugging Face rather than NGC, and
-   produces 10 m / 100 m / 850 hPa winds. It is a defensible default, not a
-   decision.
-3. The event date to stage. `stage_tempo.py` takes `--date`; pick one with good
-   coverage over the chosen region and few clouds, and stage several candidates.
-4. Who owns the reference notebooks after this one.
