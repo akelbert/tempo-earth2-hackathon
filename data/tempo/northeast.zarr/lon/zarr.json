@@ -1,13 +1,13 @@
 {
   "shape": [
-    300
+    700
   ],
-  "data_type": "float64",
+  "data_type": "float32",
   "chunk_grid": {
     "name": "regular",
     "configuration": {
       "chunk_shape": [
-        300
+        700
       ]
     }
   },
@@ -34,6 +34,12 @@
     }
   ],
   "attributes": {
+    "standard_name": "longitude",
+    "long_name": "longitude",
+    "comment": "longitude at grid box center",
+    "units": "degrees_east",
+    "valid_min": -180.0,
+    "valid_max": 180.0,
     "_FillValue": "AAAAAAAA+H8="
   },
   "dimension_names": [

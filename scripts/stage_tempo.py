@@ -142,7 +142,22 @@ def load_support(path: Path) -> xr.Dataset | None:
     keep = {src: dst for src, dst in SUPPORT_VARIABLES.items() if src in support}
     if not keep:
         return None
-    return support[list(keep)].rename(keep)
+    support = support[list(keep)]
+    # support_data's own latitude/longitude are unindexed dims at TEMPO's full
+    # native domain resolution, distinct from - and much larger than - the
+    # product group's lat/lon (which open_tempo_granule already renamed).
+    # stage_granule() below assigns the product's real lat/lon coordinate
+    # values onto this dataset by name; without renaming these dims first,
+    # that assign_coords silently creates two unrelated same-length
+    # dimensions instead of landing on the one dimension both groups share,
+    # so the later region .sel() never crops these variables and they end up
+    # misaligned with everything else in the merged dataset.
+    dim_renames = {
+        candidate: target
+        for candidate, target in (("latitude", "lat"), ("longitude", "lon"))
+        if candidate in support.dims
+    }
+    return support.rename({**keep, **dim_renames})
 
 
 def stage_granule(path: Path, region: Region) -> xr.Dataset:

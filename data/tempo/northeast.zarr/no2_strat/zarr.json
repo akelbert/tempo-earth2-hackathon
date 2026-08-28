@@ -1,17 +1,17 @@
 {
   "shape": [
-    4,
-    250,
-    300
+    6,
+    450,
+    700
   ],
   "data_type": "float64",
   "chunk_grid": {
     "name": "regular",
     "configuration": {
       "chunk_shape": [
-        2,
-        125,
-        150
+        1,
+        450,
+        700
       ]
     }
   },
@@ -38,6 +38,9 @@
     }
   ],
   "attributes": {
+    "long_name": "stratosphere nitrogen dioxide vertical column",
+    "units": "molecules/cm^2",
+    "coordinates": "time latitude longitude",
     "_FillValue": "AAAAAAAA+H8="
   },
   "dimension_names": [

@@ -185,7 +185,16 @@ def run_forecast(
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats()
 
-    io = ZarrBackend(file_name=str(store_path) if store_path else None)
+    # overwrite=True: this workflow always runs a fresh forecast, never an
+    # incremental resume. Without it, ZarrBackend reopens whatever store
+    # already exists at store_path (keyed only by model + init_time, not
+    # nsteps) and keeps its stale coordinate arrays - e.g. a lead_time axis
+    # sized for an earlier, shorter nsteps - which corrupts later writes at
+    # lead times the old store never had room for.
+    io = ZarrBackend(
+        file_name=str(store_path) if store_path else None,
+        backend_kwargs={"overwrite": True},
+    )
 
     available = set(model.output_coords(model.input_coords())["variable"].tolist())
     requested = [v for v in variables if v in available]
