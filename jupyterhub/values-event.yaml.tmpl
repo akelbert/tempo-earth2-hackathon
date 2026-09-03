@@ -1,0 +1,163 @@
+# Zero to JupyterHub 4.4.1 values for the single supported attendee profile.
+# Render with render_values.py; never pass this template directly to Helm.
+
+hub:
+  image:
+    # Chart 4.4.1 always joins these fields with ":". Splitting a digest as
+    # repo@sha256 + hex therefore reconstructs repo@sha256:hex exactly.
+    name: "${HUB_IMAGE_NAME}"
+    tag: "${HUB_IMAGE_DIGEST}"
+    pullPolicy: IfNotPresent
+
+  concurrentSpawnLimit: 25
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+  db:
+    type: sqlite-pvc
+    pvc:
+      storageClassName: "${STORAGE_CLASS_NAME}"
+      storage: 2Gi
+
+  extraEnv:
+    WORKSHOP_ALLOWED_USERS: "${WORKSHOP_ALLOWED_USERS}"
+    # JupyterHub 5.5 includes the apparent client IP in anonymous XSRF token
+    # identity. Google Front Ends can use a different proxy address for the
+    # form GET and POST, so normalize the documented GFE ranges. GKE presents
+    # these addresses to the Hub as IPv4-mapped IPv6, but include both forms so
+    # the setting remains correct if the proxy header behavior changes.
+    JUPYTERHUB_XSRF_ANONYMOUS_IP_CIDRS: "35.191.0.0/16;130.211.0.0/22;::ffff:35.191.0.0/112;::ffff:130.211.0.0/118"
+
+  extraConfig:
+    10-allowed-users: |
+      import os
+      configured_users = {
+          user.strip()
+          for user in os.environ["WORKSHOP_ALLOWED_USERS"].split(",")
+          if user.strip()
+      }
+      if not configured_users:
+          raise RuntimeError("WORKSHOP_ALLOWED_USERS must not be empty")
+      c.Authenticator.allowed_users = configured_users
+
+  config:
+    NativeAuthenticator:
+      # Keep true only during the controlled registration window. Render and
+      # redeploy with false after every attendee account has been created.
+      enable_signup: ${ENABLE_SIGNUP}
+      open_signup: false
+      minimum_password_length: 12
+      check_common_password: true
+      ask_email_on_signup: false
+      allowed_failed_logins: 5
+      seconds_before_next_try: 300
+    Authenticator:
+      admin_users:
+        - "${WORKSHOP_ADMIN_USERNAME}"
+    JupyterHub:
+      authenticator_class: nativeauthenticator.NativeAuthenticator
+
+proxy:
+  service:
+    type: ClusterIP
+    annotations:
+      # Explicit because GKE does not automatically add a NEG when network
+      # policy enforcement is enabled.
+      cloud.google.com/neg: '{"ingress": true}'
+
+  chp:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+  # TLS terminates at the Google external Application Load Balancer.
+  https:
+    enabled: false
+
+singleuser:
+  image:
+    name: "${LAB_IMAGE_NAME}"
+    tag: "${LAB_IMAGE_DIGEST}"
+    pullPolicy: IfNotPresent
+
+  startTimeout: 900
+  allowPrivilegeEscalation: false
+  uid: 1000
+  fsGid: 100
+
+  nodeSelector:
+    workload: jupyter-gpu
+
+  extraTolerations:
+    - key: workload
+      operator: Equal
+      value: jupyter-gpu
+      effect: NoSchedule
+
+  cpu:
+    guarantee: 2
+    limit: 4
+
+  memory:
+    guarantee: 8G
+    limit: 16G
+
+  extraResource:
+    guarantees:
+      ephemeral-storage: "10Gi"
+      nvidia.com/gpu: "1"
+    limits:
+      ephemeral-storage: "20Gi"
+      nvidia.com/gpu: "1"
+
+  storage:
+    type: dynamic
+    capacity: 20Gi
+    dynamic:
+      storageClass: "${STORAGE_CLASS_NAME}"
+
+  serviceAccountName: "${KUBERNETES_SERVICE_ACCOUNT}"
+
+  # Workload Identity uses the controlled GKE metadata server. The chart's
+  # default privileged iptables init container must remain disabled.
+  cloudMetadata:
+    blockWithIptables: false
+  networkPolicy:
+    enabled: true
+    egressAllowRules:
+      cloudMetadataServer: true
+      nonPrivateIPs: true
+      privateIPs: false
+
+  extraEnv:
+    TEMPO_DATA_URI: "${TEMPO_DATA_URI}"
+    EARTH2STUDIO_MODEL_CACHE: /opt/earth2/cache/models
+    EARTH2STUDIO_DATA_CACHE: /home/jovyan/.cache/earth2studio/data
+    WORKSHOP_RELEASE: "${WORKSHOP_RELEASE}"
+
+cull:
+  enabled: true
+  timeout: 14400
+  every: 600
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: "${INGRESS_IP_NAME}"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "${TLS_CERTIFICATE_NAME}"
+    kubernetes.io/ingress.allow-http: "false"
+  hosts:
+    - "${EVENT_HOSTNAME}"
+  pathType: Prefix
+  tls: []

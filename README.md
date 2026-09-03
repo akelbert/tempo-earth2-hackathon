@@ -4,8 +4,10 @@ The attendee container image and notebooks for pairing a NASA TEMPO retrieval
 with an NVIDIA Earth2Studio forecast, built for the TEMPO × Earth-2 hackathon
 (Harvard CfA, 14–16 September 2026).
 
-Terraform and the JupyterHub Helm release for the event cluster are tracked
-separately and will land here as that work matures.
+The `terraform/` and `jupyterhub/` directories contain the environment-scoped
+event deployment—see their own READMEs. No GCP project is hard-coded. Use a
+dedicated project where possible; GPU defaults remain non-provisioning until
+the benchmark, reservation, and budget gates pass.
 
 ---
 
@@ -37,9 +39,16 @@ not defects to hide.
 ## Layout
 
 ```
+terraform/
+  network.tf, gke.tf, gpu_node_pool.tf, iam.tf, artifact_registry.tf,
+  storage.tf, monitoring.tf     GCP infrastructure - see terraform/README.md
+
+jupyterhub/
+  values-event.yaml.tmpl   single digest-pinned GPU attendee profile
+  render_values.py         validates and renders deployable Helm values
+
 docker/
   Dockerfile              attendee image, built on nvcr.io/nvidia/pytorch
-  Dockerfile.cpu          CPU development variant; builds on Apple Silicon
   requirements-lab.txt    pinned JupyterHub / Glue / geoscience stack
   entrypoint.sh           runs before jupyterhub-singleuser on every start
   bin/
@@ -113,26 +122,6 @@ To remove the event-day dependency on Hugging Face entirely, bake the checkpoint
 into the image with `make build-baked` — after reviewing that model's license
 for redistribution.
 
-### On an Apple Silicon Mac
-
-The attendee image is not useful on a Mac: its base is ~20 GB of CUDA with no
-device to execute it, and cross-building it for amd64 under emulation takes
-hours. Use the CPU development variant, which builds natively on arm64:
-
-```bash
-make demo-data        # synthetic TEMPO scans, no Earthdata login needed
-make build-cpu        # docker/Dockerfile.cpu, python:3.13-slim base
-make verify-cpu       # execute both notebooks inside the image, headless
-make verify-shell     # recovery commands resolve in a login shell
-make lab-cpu          # open JupyterLab at http://localhost:8888/lab
-make lab-cpu-reset    # discard the work volume, i.e. become a new attendee
-```
-
-Your edits persist in a named Docker volume across `make lab-cpu` runs, which is
-what makes the seeding behavior testable: a second start must not overwrite an
-edited notebook, and `restore-workshop-notebooks` must move your version aside
-rather than delete it.
-
 `make demo-data` writes three Gaussian plumes over the northeast corridor,
 drifting with a constant wind, in the same shape and units as real TEMPO L3.
 It is not science — its value is that the answer is known, because the scans are
@@ -154,7 +143,7 @@ image serves local development and the cluster.
 | `EARTH2STUDIO_DATA_CACHE` | Writable data-source cache, inside the user home |
 | `WORKSHOP_MODEL` | Default Earth2Studio model (`FCN`) |
 | `WORKSHOP_RELEASE` | Release identifier; also gates notebook seeding |
-| `WORKSHOP_PRECOMPUTED` | Pre-baked forecasts for the CPU fallback path |
+| `WORKSHOP_PRECOMPUTED` | Optional reference forecasts for demonstrations, tests, and rapid iteration; not an availability fallback |
 | `WORKSHOP_WORK_DIR` | Attendee working directory (`~/work`) |
 
 The model cache is the one that matters most. Earth2Studio defaults it to

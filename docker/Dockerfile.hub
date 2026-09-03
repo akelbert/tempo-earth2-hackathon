@@ -1,0 +1,18 @@
+# Extends Zero to JupyterHub's own hub image with jupyterhub-nativeauthenticator,
+# which the chart's hub image doesn't ship by default. Needed because the
+# event baseline uses an allow-listed, controlled NativeAuthenticator signup
+# window and rules out JupyterHub's built-in DummyAuthenticator/shared password.
+#
+# Base tag must match the pinned chart release used to build the Hub image -
+# it is the chart version currently resolved by `helm repo add jupyterhub`
+# (chart 4.4.1 -> app 5.5.1 at the time this was written; reconfirm with
+# `helm show values jupyterhub/jupyterhub | grep -A3 'image:'` under hub: if
+# the chart version changes).
+ARG HUB_BASE_TAG=4.4.1
+FROM quay.io/jupyterhub/k8s-hub:${HUB_BASE_TAG}
+
+# jupyterhub-nativeauthenticator pins bcrypt/onetimepass; let it resolve its
+# own compatible versions rather than fighting the base image's pins.
+RUN pip install --no-cache-dir jupyterhub-nativeauthenticator==1.3.0 \
+    && python3 -c "import nativeauthenticator, importlib.metadata as m; \
+print('nativeauthenticator', m.version('jupyterhub-nativeauthenticator'))"
