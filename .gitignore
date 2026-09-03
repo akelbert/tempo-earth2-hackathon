@@ -11,3 +11,33 @@ wheels/
 
 # IDE
 .idea/
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfplan
+terraform/crash.log
+terraform/override.tf
+terraform/override.tf.json
+terraform/*_override.tf
+terraform/*_override.tf.json
+jupyterhub/.generated/
+
+# Credentials and TLS material must remain in secure out-of-repository storage.
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kubeconfig
+kubeconfig
+.env
+.env.*
+!.env.example
+application_default_credentials.json
+service-account-key*.json
+*-service-account-key.json
+terraform/certificates/

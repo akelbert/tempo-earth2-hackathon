@@ -1,0 +1,35 @@
+# Cloud Build only needs source, Dockerfiles, rendered notebooks, and build
+# configuration. Keep local environments, data, infrastructure state, and
+# credentials out of the uploaded source archive.
+.gcloudignore
+.git/
+.venv/
+.idea/
+.ruff_cache/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
+**/.ipynb_checkpoints/
+
+data/
+outputs/
+terraform/
+jupyterhub/.generated/
+
+*.key
+*.pem
+*.cer
+*.crt
+*.p7b
+*.csr
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kubeconfig
+kubeconfig
+.env
+.env.*
+application_default_credentials.json
+service-account-key*.json
+*-service-account-key.json

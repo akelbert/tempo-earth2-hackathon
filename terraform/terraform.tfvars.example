@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+
+project_id  = "YOUR_PROJECT_ID"
+region      = "us-central1"
+zone        = "us-central1-a"
+environment = "dev"
+event_hostname      = "living-earth-twin-hub.cfa.harvard.edu"
+tls_certificate_name = "tempo-earth2-dev-tls-20260902"
+
+# Replace with the operator or institutional VPN public address. Terraform
+# deliberately rejects 0.0.0.0/0.
+master_authorized_networks = [
+  {
+    cidr_block   = "203.0.113.10/32"
+    display_name = "operator"
+  }
+]
+
+# GPU nodes bill per hour whether or not anyone is using them. Leave at 0
+# until there's a real reason to test the GPU path.
+gpu_initial_node_count = 0
+gpu_min_node_count     = 0
+gpu_max_node_count     = 1
+
+# Required when environment = "event".
+gpu_reservation_name = ""
+
+# Required when environment = "event" so HTTPS and GPU scheduling alerts reach
+# the event operations team.
+alert_email = ""
