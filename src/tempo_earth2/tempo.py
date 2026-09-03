@@ -20,7 +20,7 @@ import os
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -75,7 +75,7 @@ def granule_time(name: str) -> datetime | None:
     if not match:
         return None
     return datetime.strptime(match.group(1), "%Y%m%dT%H%M%SZ").replace(
-        tzinfo=timezone.utc
+        tzinfo=UTC
     )
 
 
@@ -174,7 +174,10 @@ def open_tempo_source(uri: str) -> xr.Dataset:
 
 def load_tempo_series(granules: Iterable[str | Path]) -> xr.Dataset:
     """Concatenate several TEMPO granules along ``time``, sorted by scan time."""
-    granules = sorted(granules, key=lambda g: (granule_time(g) or datetime.min, str(g)))
+    granules = sorted(
+        granules,
+        key=lambda g: (granule_time(g) or datetime.min.replace(tzinfo=UTC), str(g)),
+    )
     datasets = []
     for granule in granules:
         ds = open_tempo_granule(granule)
@@ -270,7 +273,7 @@ def search_earthdata(
     ``earthaccess.login(persist=True)`` first, or set ``EARTHDATA_USERNAME``
     and ``EARTHDATA_PASSWORD``.
     """
-    import earthaccess  # noqa: PLC0415 - optional dependency, preparation only
+    import earthaccess
 
     if isinstance(region, str):
         region = REGIONS[region]

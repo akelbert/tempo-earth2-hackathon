@@ -13,7 +13,7 @@ import platform
 import shutil
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -96,14 +96,14 @@ class WorkshopConfig:
         for candidate in candidates:
             try:
                 if candidate.startswith(("gs://", "s3://", "http://", "https://")):
-                    import fsspec  # noqa: PLC0415 - optional at import time
+                    import fsspec
 
                     with fsspec.open(candidate, "rt") as handle:
                         return json.load(handle)
                 path = Path(candidate)
                 if path.is_file():
                     return json.loads(path.read_text())
-            except Exception:  # pragma: no cover - manifest is advisory only
+            except Exception:  # noqa: BLE001, S112  # pragma: no cover - advisory
                 continue
         return {}
 
@@ -119,7 +119,7 @@ def describe_environment() -> dict[str, Any]:
     to the benchmark record without further processing.
     """
     info: dict[str, Any] = {
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "timestamp_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "hostname": platform.node(),
         "python": sys.version.split()[0],
         "platform": platform.platform(),
@@ -137,7 +137,7 @@ def describe_environment() -> dict[str, Any]:
             info["gpu_memory_gb"] = round(props.total_memory / 1024**3, 1)
             info["compute_capability"] = f"{props.major}.{props.minor}"
             info["gpu_count"] = torch.cuda.device_count()
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # noqa: BLE001  # pragma: no cover - optional probe
         info["torch"] = f"unavailable: {exc}"
 
     for package in (
@@ -156,7 +156,7 @@ def describe_environment() -> dict[str, Any]:
         try:
             module = __import__(package)
             info[package] = getattr(module, "__version__", "unknown")
-        except Exception:
+        except Exception:  # noqa: BLE001  # optional dependency probe
             info[package] = "not installed"
 
     cfg = WorkshopConfig.from_env()
@@ -170,7 +170,7 @@ def describe_environment() -> dict[str, Any]:
         try:
             usage = shutil.disk_usage(path)
             info[f"{label}_free_gb"] = round(usage.free / 1024**3, 1)
-        except Exception:
+        except Exception:  # noqa: BLE001  # filesystem capability probe
             info[f"{label}_free_gb"] = None
 
     return info

@@ -81,7 +81,7 @@ def build_tempo(
         coords={"time": times, "lat": lat, "lon": lon},
         attrs={"title": "synthetic TEMPO-shaped test data", "synthetic": "yes"},
     )
-    ds.to_zarr(str(path), mode="w", consolidated=True)
+    ds.to_zarr(str(path), mode="w", consolidated=True, zarr_format=2)
     return ds
 
 
@@ -124,5 +124,5 @@ def write_precomputed(directory: str | Path, model: str = "FCN", **kwargs) -> Pa
     init = str(ds["time"].values[0])[:16].replace("-", "").replace(":", "")
     path = Path(directory) / f"{model.lower()}_{init}Z.zarr"
     path.parent.mkdir(parents=True, exist_ok=True)
-    ds.to_zarr(str(path), mode="w", consolidated=True)
+    ds.to_zarr(str(path), mode="w", consolidated=True, zarr_format=2)
     return path

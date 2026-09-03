@@ -18,20 +18,20 @@ from __future__ import annotations
 
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
 
-import numpy as np  # noqa: E402
-import xarray as xr  # noqa: E402
+import numpy as np
+import xarray as xr
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tempo_earth2 import advect, forecast, plots  # noqa: E402
-from tempo_earth2.tempo import (  # noqa: E402
+from tempo_earth2 import advect, forecast, plots
+from tempo_earth2.tempo import (
     REGIONS,
     apply_quality_mask,
     granule_time,
@@ -95,7 +95,7 @@ def build_synthetic_tempo(path: Path, u_ms: float, v_ms: float, dt_hours: float)
         },
         coords={"time": times, "lat": lat, "lon": lon},
     )
-    ds.to_zarr(path, mode="w", consolidated=True)
+    ds.to_zarr(path, mode="w", consolidated=True, zarr_format=2)
     return ds, (dlat, dlon)
 
 
@@ -125,7 +125,7 @@ def main() -> int:
     print("Building synthetic TEMPO store ...")
     with tempfile.TemporaryDirectory() as tmp:
         store = Path(tmp) / "tempo.zarr"
-        truth, (dlat, dlon) = build_synthetic_tempo(store, u_ms, v_ms, dt_hours)
+        _truth, (dlat, dlon) = build_synthetic_tempo(store, u_ms, v_ms, dt_hours)
         print(f"  plume displaced by {dlon:+.3f} lon, {dlat:+.3f} lat degrees")
 
         print("\nTEMPO loading")
@@ -142,19 +142,19 @@ def main() -> int:
 
         print("\nForecast handling")
         fx = build_synthetic_forecast(u_ms, v_ms)
-        target = datetime(2026, 6, 15, 17, 30, tzinfo=timezone.utc)
+        target = datetime(2026, 6, 15, 17, 30, tzinfo=UTC)
         picked = forecast.select_valid_time(fx, target)
         check("select_valid_time picks nearest lead", picked.attrs["lead_hours"] == 6.0,
               f"lead {picked.attrs['lead_hours']} h")
 
-        init = forecast.nearest_init_time(datetime(2026, 6, 15, 17, 38, tzinfo=timezone.utc))
+        init = forecast.nearest_init_time(datetime(2026, 6, 15, 17, 38, tzinfo=UTC))
         check("nearest_init_time rounds down", init.hour == 12, f"{init:%H:%M}Z")
         # 12:00Z init, 17:30Z target: one 6-hour step reaches 18:00Z, which
         # covers it. A 19:00Z target needs two.
         check("steps_to_cover (within one step)",
               forecast.steps_to_cover(init, target) == 1)
         check("steps_to_cover (needs two)",
-              forecast.steps_to_cover(init, datetime(2026, 6, 15, 19, 0, tzinfo=timezone.utc)) == 2)
+              forecast.steps_to_cover(init, datetime(2026, 6, 15, 19, 0, tzinfo=UTC)) == 2)
 
         wind = forecast.regrid_to(
             picked[["u10m", "v10m"]], no2_t0["lat"].values, no2_t0["lon"].values
@@ -263,7 +263,7 @@ def main() -> int:
 
         print("\nResult assembly (the notebook's save step)")
         picked_wind = forecast.regrid_to(
-            forecast.select_valid_time(converted, datetime(2026, 6, 15, 18, 0, tzinfo=timezone.utc))[
+            forecast.select_valid_time(converted, datetime(2026, 6, 15, 18, 0, tzinfo=UTC))[
                 ["u10m", "v10m"]
             ],
             no2_t0["lat"].values,
@@ -271,7 +271,7 @@ def main() -> int:
         )
         # no2_t0, no2_t1 and the wind each carry a different scalar time
         # coordinate; merging them without dropping those is a conflict.
-        bare = lambda da: da.reset_coords(drop=True)  # noqa: E731
+        bare = lambda da: da.reset_coords(drop=True)
         merged = xr.Dataset(
             {
                 "no2_t0": bare(no2_t0),
@@ -287,7 +287,7 @@ def main() -> int:
 
         print("\nMisc")
         stamp = granule_time("TEMPO_NO2_L3_V04_20260615T170903Z_S009.nc")
-        check("granule_time parses", stamp == datetime(2026, 6, 15, 17, 9, 3, tzinfo=timezone.utc),
+        check("granule_time parses", stamp == datetime(2026, 6, 15, 17, 9, 3, tzinfo=UTC),
               str(stamp))
 
     print(f"\n{len(PASSED)} checks passed.")

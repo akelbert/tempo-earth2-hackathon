@@ -46,8 +46,8 @@
 # ## Running time
 #
 # On a dedicated GPU: about three to five minutes, most of it the first model
-# load. On the CPU fallback: use the precomputed forecast (§3 explains how) —
-# running the model on CPU takes tens of minutes.
+# load. If no GPU is visible, report the platform incident and do not run the
+# inference section until service is restored.
 
 # %% [markdown]
 # ---
@@ -70,11 +70,10 @@ MAX_CLOUD_FRACTION = 0.2  # raise towards 1.0 to keep more (cloudier) pixels
 MODEL_NAME = "FCN"        # see tempo_earth2.forecast.SUPPORTED_MODELS
 WIND_LEVEL = "10m"        # "10m" | "100m" | "850"
 
-# --- Escape hatch -------------------------------------------------------------
-# Set to True to read a pre-baked forecast instead of running the model. This is
-# the CPU fallback path; it is also useful if you want to iterate on the
-# analysis without paying for inference every time.
-USE_PRECOMPUTED = False
+# --- Optional teaching/reference data ----------------------------------------
+# Instructors may set this to True for a demonstration or a fast analysis loop.
+# It is not the event's availability fallback; attendee servers still require a GPU.
+USE_REFERENCE_FORECAST = False
 
 # %%
 import warnings
@@ -95,13 +94,12 @@ region = REGIONS[REGION]
 print(f"Region:      {region.name}  {region.bbox}")
 print(f"TEMPO data:  {config.tempo_uri}")
 print(f"Model:       {MODEL_NAME}")
-print(f"GPU:         {'yes' if forecast.cuda_available() else 'no (CPU fallback)'}")
+print(f"GPU:         {'yes' if forecast.cuda_available() else 'NO - report incident'}")
 
-if not forecast.cuda_available() and not USE_PRECOMPUTED:
-    print(
-        "\n  No GPU is visible. Set USE_PRECOMPUTED = True in the settings cell\n"
-        "  above and re-run, unless you specifically want to wait for CPU\n"
-        "  inference."
+if not forecast.cuda_available() and not USE_REFERENCE_FORECAST:
+    raise RuntimeError(
+        "No CUDA device is visible. Report this platform incident and work on "
+        "non-GPU project tasks until GPU service is restored."
     )
 
 # %% [markdown]
@@ -216,8 +214,8 @@ print(f"Lead time to t0:   {(t0_dt - init_time).total_seconds() / 3600:.1f} hour
 print(f"Forecast steps:    {nsteps}  ({nsteps * 6} hours)")
 
 # %% [markdown]
-# Now run it. The first call downloads the checkpoint if the shared cache is
-# cold — that is the slow part, and it only happens once per server.
+# Now run it. The event image already contains the reviewed checkpoint. Model
+# initialization is still the slow part, but it must not require a download.
 #
 # We ask for only the eight wind and near-surface variables we need. The model
 # computes all 26 internally either way, but writing only what we use keeps the
@@ -226,7 +224,7 @@ print(f"Forecast steps:    {nsteps}  ({nsteps * 6} hours)")
 # %%
 store = config.outputs / f"{MODEL_NAME.lower()}_{init_time:%Y%m%dT%H%M}Z.zarr"
 
-if USE_PRECOMPUTED:
+if USE_REFERENCE_FORECAST:
     path = forecast.precomputed_forecast_path(config, MODEL_NAME, init_time)
     print(f"Reading precomputed forecast: {path}")
     fx = forecast.load_precomputed(path)
@@ -608,7 +606,7 @@ result_ds = xr.Dataset(
     },
 )
 result_path = outputs / "intro_fields.zarr"
-result_ds.to_zarr(result_path, mode="w", consolidated=True)
+result_ds.to_zarr(result_path, mode="w", consolidated=True, zarr_format=2)
 print(f"Wrote {result_path}")
 
 # %% [markdown]

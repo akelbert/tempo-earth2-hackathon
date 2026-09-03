@@ -12,8 +12,8 @@
 # 4. Where do model checkpoints get cached, and is that cache already warm?
 # 5. Is my home directory writable, and how much space is left?
 #
-# Nothing here needs a GPU. If the GPU checks fail, the rest still runs, and
-# the introductory notebook has a CPU fallback path.
+# Nothing here needs a GPU. If the GPU check fails, the remaining diagnostics
+# still run so the output can be attached to the platform incident.
 
 # %%
 from tempo_earth2.config import WorkshopConfig, describe_environment
@@ -29,8 +29,8 @@ for key, value in info.items():
 # ## 1. Accelerator
 #
 # The workshop image is built for a single dedicated GPU per attendee. If
-# `cuda_available` is `False` you are on the CPU fallback configuration; say so
-# when you ask for help, because it changes the answer.
+# `cuda_available` is `False`, report it to an instructor: the supported
+# environment is unhealthy and Earth-2 inference should not be attempted.
 
 # %%
 # Every check in this notebook reports rather than raises. A diagnostic that
@@ -58,15 +58,15 @@ if torch is not None and torch.cuda.is_available():
         print("\n  Note: less than 80% of GPU memory is free on a fresh server.")
         print("  Report this - you may be sharing the device.")
 elif torch is not None:
-    print("No CUDA device visible. Running in CPU fallback mode.")
-    print("Earth-2 inference will be slow or unavailable; use the precomputed path.")
+    print("No CUDA device visible. The supported workshop environment is unhealthy.")
+    print("Report this output to an instructor and work on non-GPU project tasks.")
 
 # %% [markdown]
 # ## 2. Earth2Studio and the model cache
 #
-# Model checkpoints are multi-gigabyte. The workshop points
-# `EARTH2STUDIO_MODEL_CACHE` at a shared, pre-populated location so that fifty
-# servers do not each download the same file. This cell reports what is in it.
+# Model checkpoints are multi-gigabyte. The event image contains the reviewed
+# checkpoint at `EARTH2STUDIO_MODEL_CACHE`, so fifty servers never download it
+# independently. This cell reports what the image contains.
 
 # %%
 from pathlib import Path
@@ -89,7 +89,7 @@ if cache.exists():
     for f in sorted(files, key=lambda f: -f.stat().st_size)[:8]:
         print(f"                  {f.stat().st_size / 1024**2:>8.0f} MB  {f.relative_to(cache)}")
 else:
-    print("cache contents    (empty - the first model load will download it)")
+    print("cache contents    EMPTY - report this; the event image is incomplete")
 
 # %% [markdown]
 # ## 3. TEMPO data access

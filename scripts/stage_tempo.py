@@ -27,7 +27,7 @@ import json
 import shutil
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -35,7 +35,7 @@ import xarray as xr
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tempo_earth2.tempo import (  # noqa: E402
+from tempo_earth2.tempo import (
     NO2_TROPOSPHERIC,
     REGIONS,
     Region,
@@ -110,7 +110,7 @@ def search(args: argparse.Namespace, region: Region) -> list:
 
     earthaccess.login(persist=True)
 
-    day = datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    day = datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=UTC)
     start = day.replace(hour=args.start_hour)
     # TEMPO scans hourly during daylight; the following UTC morning bounds a day.
     end = (day.replace(hour=23, minute=59, second=59))
@@ -221,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
                 "title": f"TEMPO {args.short_name} {args.version} regional subset",
                 "region": region.name,
                 "bbox": list(region.bbox),
-                "staged_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "staged_utc": datetime.now(UTC).isoformat(timespec="seconds"),
                 "source_collection": f"{args.short_name} {args.version}",
                 "source_granules": [g["meta"]["native-id"] for g in granules],
             }
@@ -237,13 +237,19 @@ def main(argv: list[str] | None = None) -> int:
 
         output = args.output
         print(f"\nWriting {output} ...")
-        combined.to_zarr(output, mode="w", consolidated=True, encoding=encoding)
+        combined.to_zarr(
+            output,
+            mode="w",
+            consolidated=True,
+            encoding=encoding,
+            zarr_format=2,
+        )
 
         scans = [
             np.datetime_as_string(t, unit="s") for t in combined["time"].values
         ]
         manifest = {
-            "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "created_utc": datetime.now(UTC).isoformat(timespec="seconds"),
             "collection": args.short_name,
             "version": args.version,
             "region": region.name,

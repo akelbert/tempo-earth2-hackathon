@@ -1,7 +1,7 @@
 """Thin Earth2Studio wrapper for the workshop notebooks.
 
 Earth2Studio is imported lazily so that ``import tempo_earth2`` still works in a
-CPU-only or partially installed environment - the environment-check notebook
+partially installed environment - the environment-check notebook
 needs to report *why* a piece is missing rather than fail at import.
 """
 
@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -80,7 +80,7 @@ def cuda_available() -> bool:
         import torch
 
         return torch.cuda.is_available()
-    except Exception:
+    except Exception:  # noqa: BLE001  # optional CUDA runtime probe
         return False
 
 
@@ -92,8 +92,8 @@ def nearest_init_time(target: datetime, timestep_hours: int = 6) -> datetime:
     forecast-versus-observation comparison into a reanalysis comparison.
     """
     if target.tzinfo is None:
-        target = target.replace(tzinfo=timezone.utc)
-    target = target.astimezone(timezone.utc)
+        target = target.replace(tzinfo=UTC)
+    target = target.astimezone(UTC)
     hour = (target.hour // timestep_hours) * timestep_hours
     return target.replace(hour=hour, minute=0, second=0, microsecond=0)
 
@@ -101,8 +101,8 @@ def nearest_init_time(target: datetime, timestep_hours: int = 6) -> datetime:
 def steps_to_cover(init_time: datetime, valid_time: datetime, timestep_hours: int = 6) -> int:
     """Number of forecast steps needed to reach or pass ``valid_time``."""
     if valid_time.tzinfo is None:
-        valid_time = valid_time.replace(tzinfo=timezone.utc)
-    delta = valid_time.astimezone(timezone.utc) - init_time
+        valid_time = valid_time.replace(tzinfo=UTC)
+    delta = valid_time.astimezone(UTC) - init_time
     return max(1, int(np.ceil(delta.total_seconds() / (timestep_hours * 3600))))
 
 
@@ -160,15 +160,15 @@ def run_forecast(
     """
     import time as _time
 
-    import earth2studio.run as run
     import torch
+    from earth2studio import run
     from earth2studio.data import GFS
     from earth2studio.io import ZarrBackend
 
     if isinstance(init_time, str):
         init_time = datetime.fromisoformat(init_time)
     if init_time.tzinfo is not None:
-        init_time = init_time.astimezone(timezone.utc).replace(tzinfo=None)
+        init_time = init_time.astimezone(UTC).replace(tzinfo=None)
 
     step_hours = MODEL_TIMESTEP_HOURS.get(model_name, 6)
     if init_time.hour % step_hours or init_time.minute or init_time.second:
@@ -303,7 +303,7 @@ def select_valid_time(ds: xr.Dataset, target: datetime | np.datetime64) -> xr.Da
     """Pick the forecast lead time whose valid time is closest to ``target``."""
     if isinstance(target, datetime):
         if target.tzinfo is not None:
-            target = target.astimezone(timezone.utc).replace(tzinfo=None)
+            target = target.astimezone(UTC).replace(tzinfo=None)
         target = np.datetime64(target, "ns")
 
     valid = ds["valid_time"].values  # shape (time, lead_time)
@@ -331,7 +331,7 @@ def regrid_to(source: xr.Dataset, target_lat, target_lon, method: str = "linear"
 
 
 def precomputed_forecast_path(config, model_name: str, init_time: datetime) -> Path:
-    """Location of a pre-baked forecast used when no GPU is available."""
+    """Location of an optional reference forecast for teaching and tests."""
     stamp = init_time.strftime("%Y%m%dT%H%MZ")
     return Path(
         os.environ.get("WORKSHOP_PRECOMPUTED", "/opt/earth2/precomputed")

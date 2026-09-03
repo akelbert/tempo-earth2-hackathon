@@ -26,7 +26,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -34,7 +34,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import _synthetic  # noqa: E402
+import _synthetic
 
 U_MS, V_MS, DT_HOURS = 7.5, -3.0, 1.0
 
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
 
     scans = [np.datetime_as_string(t, unit="s") for t in ds["time"].values]
     manifest = {
-        "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "created_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "collection": "SYNTHETIC (not TEMPO)",
         "version": "n/a",
         "region": "northeast",
@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f'  export WORKSHOP_PRECOMPUTED="{precomputed}"')
     print(f"\nForecast store: {store}")
     print(
-        "\nIn the notebook, set USE_PRECOMPUTED = True. Expect a skill score "
+        "\nIn the notebook, set USE_REFERENCE_FORECAST = True. Expect a skill score "
         "near +0.98:\nthe scans were built from this exact wind field."
     )
     return 0

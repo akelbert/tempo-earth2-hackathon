@@ -30,9 +30,10 @@ bqplot-image-gl==1.10.2
 ipyleaflet==0.20.0
 
 # --- Glue --------------------------------------------------------------------
-# glue-jupyter describes itself as experimental. It is scaffolding for the
-# guided path, not a load-bearing dependency: every workshop notebook must
-# still produce its result with matplotlib alone if a Glue viewer fails.
+# glue-jupyter describes itself as experimental, but linked selection is a
+# workshop requirement. The frozen release validates the documented scatter-
+# viewer selection path; a failure is escalated rather than hidden by a second
+# attendee experience.
 glue-core==1.27.0
 glue-jupyter==0.29.0
 

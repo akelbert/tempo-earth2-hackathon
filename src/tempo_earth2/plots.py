@@ -23,7 +23,7 @@ def _cartopy():
         import cartopy.feature as cfeature
 
         return ccrs, cfeature
-    except Exception:
+    except Exception:  # noqa: BLE001  # cartopy has optional native dependencies
         return None, None
 
 
@@ -96,7 +96,7 @@ def plot_no2(
         transform = getattr(ax, "projection", None)
         transform = None if transform is None else transform.__class__()
 
-    mesh_kwargs = dict(cmap=cmap, vmin=vmin, vmax=vmax, shading="auto")
+    mesh_kwargs = {"cmap": cmap, "vmin": vmin, "vmax": vmax, "shading": "auto"}
     if transform is not None:
         mesh_kwargs["transform"] = transform
     mesh_kwargs.update(kwargs)
@@ -131,9 +131,12 @@ def plot_no2_with_wind(
     us = u.isel(lat=slice(None, None, every), lon=slice(None, None, every))
     vs = v.isel(lat=slice(None, None, every), lon=slice(None, None, every))
 
-    quiver_kwargs: dict[str, Any] = dict(
-        color="tab:cyan", scale=350, width=0.0025, alpha=0.9
-    )
+    quiver_kwargs: dict[str, Any] = {
+        "color": "tab:cyan",
+        "scale": 350,
+        "width": 0.0025,
+        "alpha": 0.9,
+    }
     projection = getattr(ax, "projection", None)
     if projection is not None:
         quiver_kwargs["transform"] = projection.__class__()

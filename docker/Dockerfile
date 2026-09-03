@@ -152,8 +152,8 @@ print('jupyterhub', jupyterhub.__version__)"
 # Workshop layout.
 #
 #   /opt/earth2/notebooks   immutable reference copy of the released notebooks
-#   /opt/earth2/cache/models  shared Earth2Studio model cache (pre-populated)
-#   /opt/earth2/precomputed   pre-baked outputs for the CPU fallback path
+#   /opt/earth2/cache/models  Earth2Studio model cache baked into event image
+#   /opt/earth2/precomputed   optional reference outputs for teaching and tests
 #   /opt/earth2/bin           seed / restore / reset helper commands
 #   /home/jovyan/work         attendee working copy, on the persistent volume
 # ---------------------------------------------------------------------------
@@ -165,8 +165,7 @@ ENV EARTH2_ROOT=/opt/earth2 \
     EARTH2STUDIO_DATA_CACHE=/home/${NB_USER}/.cache/earth2studio/data \
     EARTH2STUDIO_PACKAGE_TIMEOUT=900 \
     PYTHONPATH=/opt/earth2/lib \
-    PATH=/opt/earth2/bin:${PATH} \
-    MPLCONFIGDIR=/tmp/matplotlib
+    PATH=/opt/earth2/bin:${PATH}
 
 RUN mkdir -p /opt/earth2/notebooks \
              /opt/earth2/cache/models \
@@ -196,7 +195,9 @@ RUN printf '%s\n' \
 
 # ---------------------------------------------------------------------------
 # Optional: bake the model checkpoint. Turning this on removes the event-day
-# dependency on Hugging Face and NGC entirely, at the cost of image size.
+# dependency on Hugging Face entirely, at the cost of image size. The selected
+# nvidia/fourcastnet1 checkpoint is published for commercial and non-commercial
+# use under Apache-2.0; re-check the model card if PREFETCH_MODEL_NAME changes.
 # ---------------------------------------------------------------------------
 RUN if [ "${PREFETCH_MODEL}" = "true" ]; then \
         python /opt/earth2/scripts/prefetch_models.py --model "${PREFETCH_MODEL_NAME}" \
@@ -211,24 +212,24 @@ RUN if ! id -u ${NB_UID} >/dev/null 2>&1; then \
     else \
         usermod -l ${NB_USER} -d /home/${NB_USER} -m "$(id -un ${NB_UID})" || true; \
     fi \
-    && mkdir -p /home/${NB_USER}/work /home/${NB_USER}/.cache/earth2studio/data \
+    && mkdir -p /home/${NB_USER}/work \
+                /home/${NB_USER}/.cache/earth2studio/data \
+                /home/${NB_USER}/.cache/matplotlib \
     && chown -R ${NB_UID}:${NB_GID} /home/${NB_USER} \
     && chmod -R a+rX /opt/earth2 \
     && chown -R ${NB_UID}:${NB_GID} /opt/earth2/cache/models
 # The rest of /opt/earth2 is intentionally read-only. The model cache is the
-# exception: unless PREFETCH_MODEL baked a checkpoint above, this directory is
-# still empty here, and Earth2Studio downloads into it on first model load. In
-# the real deployment this path gets shadowed by a pre-populated shared
-# volume mount (see the design doc's cache options) so attendees never
-# actually write here; without that mount - i.e. every local/single-container
-# run - jovyan owning it is what makes a plain, non-baked image usable at all.
+# exception: a local image built without PREFETCH_MODEL needs a writable place
+# for its first model load. The event build always bakes the reviewed checkpoint,
+# pins the resulting image digest, and never depends on an event-day download.
 
 COPY docker/entrypoint.sh /usr/local/bin/earth2-entrypoint
 RUN chmod +x /usr/local/bin/earth2-entrypoint
 
 USER ${NB_UID}:${NB_GID}
 WORKDIR /home/${NB_USER}
-ENV HOME=/home/${NB_USER}
+ENV HOME=/home/${NB_USER} \
+    MPLCONFIGDIR=/home/${NB_USER}/.cache/matplotlib
 
 EXPOSE 8888
 

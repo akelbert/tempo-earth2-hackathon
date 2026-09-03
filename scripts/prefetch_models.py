@@ -10,8 +10,8 @@ Two jobs, both of which exist to remove event-day dependencies:
    plan.
 
 2. ``--precompute`` additionally runs the forecast and writes it to
-   ``WORKSHOP_PRECOMPUTED``. That is what makes the CPU fallback path usable:
-   the guided exercises read a pre-baked forecast instead of running inference.
+   ``WORKSHOP_PRECOMPUTED`` for demonstrations, regression tests, or rapid
+   analysis iteration. It is not a deployment availability path.
 
     python scripts/prefetch_models.py --model FCN
     python scripts/prefetch_models.py --model FCN --precompute \\
@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, "/opt/earth2/lib")
 
-from tempo_earth2.forecast import (  # noqa: E402
+from tempo_earth2.forecast import (
     SUPPORTED_MODELS,
     TRANSPORT_VARIABLES,
     load_model,
@@ -51,7 +51,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--precompute",
         action="store_true",
-        help="also run and store a forecast for the CPU fallback path",
+        help="also run and store an optional reference forecast",
     )
     parser.add_argument(
         "--init-time",

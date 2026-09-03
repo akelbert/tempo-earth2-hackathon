@@ -2,8 +2,9 @@
 """Execute the shipped introductory notebook against synthetic data.
 
 This runs the actual ``.ipynb`` that goes into the image, cell by cell, using
-the CPU-fallback (precomputed forecast) path. It needs no GPU, no Earth2Studio
-and no Earthdata login, so it can run in CI and on a laptop.
+the optional reference-forecast path. It needs no GPU, no Earth2Studio, and no
+Earthdata login, so it can run in CI and on a laptop. This is test coverage,
+not a supported attendee deployment mode.
 
 What it cannot check is the Earth2Studio inference path itself. What it does
 check is everything else: that the notebook's cells run in order, that the
@@ -28,7 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import _synthetic  # noqa: E402
+import _synthetic
 
 DEFAULT_NOTEBOOK = ROOT / "notebooks" / "01_tempo_earth2_intro.ipynb"
 
@@ -66,7 +67,7 @@ def prepare(workspace: Path) -> dict[str, str]:
 
 
 def patch_settings(notebook: dict) -> int | None:
-    """Switch the notebook to the precomputed path. Returns the cell index.
+    """Switch the notebook to its reference data. Returns the cell index.
 
     Returns ``None`` for notebooks that have no such setting, such as the
     environment check.
@@ -77,9 +78,9 @@ def patch_settings(notebook: dict) -> int | None:
         source = cell["source"]
         if isinstance(source, list):
             source = "".join(source)
-        if cell["cell_type"] == "code" and "USE_PRECOMPUTED = False" in source:
+        if cell["cell_type"] == "code" and "USE_REFERENCE_FORECAST = False" in source:
             cell["source"] = source.replace(
-                "USE_PRECOMPUTED = False", "USE_PRECOMPUTED = True"
+                "USE_REFERENCE_FORECAST = False", "USE_REFERENCE_FORECAST = True"
             )
             return index
     return None
@@ -176,7 +177,10 @@ def main(argv: list[str] | None = None) -> int:
         notebook = nbformat.read(args.notebook, as_version=4)
         settings_cell = patch_settings(notebook)
         if settings_cell is not None:
-            print(f"  patched settings cell {settings_cell} to USE_PRECOMPUTED = True")
+            print(
+                f"  patched settings cell {settings_cell} "
+                "to USE_REFERENCE_FORECAST = True"
+            )
 
         if not args.with_optional:
             skipped = drop_optional(notebook)
