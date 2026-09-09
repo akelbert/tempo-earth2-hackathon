@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+.cache/
+benchmark-results/
 
 # IDE
 .idea/

@@ -56,6 +56,41 @@ The following must be resolved no later than **August 21**:
 
 The August 21 gate succeeds only when a representative notebook runs end-to-end with real TEMPO data and the chosen model, not when Earth2Studio merely imports successfully.
 
+### Implemented model portfolio (September 9 update)
+
+The scientific surface is broader than a single checkpoint, but the deployment
+contract remains precise. A machine-readable model catalog separates four
+tiers:
+
+- **guaranteed**: installed in the release image and validated on the exact L4
+  attendee profile;
+- **candidate**: scientifically relevant, with a reproducible candidate-image
+  build, but unavailable to attendees until checkpoint terms and the L4
+  benchmark pass;
+- **precomputed**: selected outputs are useful for teaching and project design,
+  while interactive inference is not promised on 24 GB hardware; and
+- **conditional**: promotion first requires a compatible upstream input or
+  another explicit dependency decision.
+
+FCN and persistence are guaranteed. DLWP and Precipitation AFNO are the first
+candidates. The v2 precipitation diagnostic is excluded because Earth2Studio
+0.17 marks it as worse than v1 and slated for deprecation. On September 9, the
+exact candidate image passed one-step workstation tests on an 8 GB RTX 2080
+SUPER: DLWP peaked at 0.53 GB allocated GPU memory and the coupled
+FCN-to-Precipitation-AFNO path peaked at 1.36 GB. These results reduce technical
+risk but do not promote either model; the exact registry digest must still pass
+on an attendee-profile L4 and the checkpoint terms must be reviewed. Solar
+Radiation AFNO remains conditional because the guaranteed FCN path does not
+provide all of its required inputs. StormCast,
+DLESyM, Aurora, and FCN3 are precomputed/reference paths unless a separately
+benchmarked high-memory service is approved. This catalog is not a CPU fallback
+and does not introduce a second JupyterHub profile.
+
+Candidate promotion requires the exact container to record model-load time,
+one-step inference time, peak GPU allocation, cache growth, output variables,
+and any failure on an L4. Merely installing an Earth2Studio extra or loading a
+checkpoint does not change its tier.
+
 ## Architecture
 
 JupyterHub will run in a GKE Standard cluster. The Hub authenticates users and uses KubeSpawner to create one Kubernetes pod per active attendee. Cluster services run on a small CPU node pool. The attendee pods always run on a separate GPU node pool and request one GPU.
@@ -87,7 +122,7 @@ flowchart TB
     P2 --- GPU
     PN --- GPU
 
-    P1 --> DATA[(Read-only TEMPO data)]
+    P1 --> DATA[(Read-only workshop data catalog)]
     P2 --> DATA
     PN --> DATA
 
@@ -462,6 +497,57 @@ values, coordinates, units, and grouping required by the exercises.
 
 Notebook code should use a configuration value such as `TEMPO_DATA_URI` rather than hard-code attendee-specific paths. A small data-access helper can resolve the production GCS/Zarr URI and a local validation fixture consistently.
 
+### Catalog and access layers
+
+`WORKSHOP_DATA_URI` identifies the read-only bucket root. The packaged data
+catalog resolves collections below that root and records provider, scientific
+themes, format, access mode, authoritative source, event status, and limitations.
+It exposes three intentionally different layers:
+
+1. **Example cases** are compact, provenance-tracked, and tested with the
+   released notebooks.
+2. **Exploration collections** cover wider time/space ranges in monthly or
+   otherwise analysis-friendly partitions. Attendees subset these before
+   loading them into the 20 GiB home and finite pod memory.
+3. **Direct authoritative sources** remain at the provider when mirroring the
+   full archive would be wasteful. Helpers construct bounded API/archive
+   requests; they never recursively copy NOAA or NASA holdings.
+
+NASA products whose object access requires Earthdata credentials or an AWS
+region-specific session are staged by an operator into the event's
+`us-central1` bucket. Public NOAA HRRR/GFS and bounded USGS/NOAA API requests can
+remain source-direct. Controlled investigator data are never made available
+merely because the GCP project can store them: data-owner terms and the intended
+workshop audience must be recorded first.
+
+As of September 9, the development bucket contains a real matched Northeast
+case at `tempo/cases/2026-05-31/northeast.zarr` (six TEMPO V04 scans from
+14:06–19:06 UTC), same-day EPA AQS data, and monthly Northeast AQS partitions
+from September 2025 through the currently published portion of June 2026. The
+existing `tempo/northeast.zarr` case remains intact. The matched date was moved
+from June 1 to May 31 after validation found that the June 1 current-year EPA
+archive stopped at 04:00 UTC and therefore did not overlap TEMPO's afternoon
+scans.
+
+### Contextual teaching data
+
+Keep small, curated companion extracts below a separate
+`WORKSHOP_CONTEXT_DATA_URI` prefix in the canonical-data bucket. Use inspectable
+CSV for station/time-series tables, NetCDF for tiny gridded teaching fixtures,
+and consolidated Zarr v2 for larger multidimensional subsets. The initial
+collection supports column-to-surface NO2, smoke transport, wetland response,
+spatial-scale, and bring-your-own-site exercises. Each extract must carry its
+source, time coverage, units, processing notes, and a clear synthetic flag when
+it is generated rather than observed.
+
+Do not put unrestricted source archives into the attendee image or home. AQS
+is filtered by region/date and partitioned monthly; selected FIRMS and HLS cases
+should be mirrored after credential and source review; HRRR/GFS remain direct
+public-cloud sources with bounded discovery examples. Institutionally approved
+ForestGEO, GCReW, SERC, or other investigator data still require an explicit
+file handoff, workshop-use scope, and publication decision even when the project
+has Cloud Storage permissions.
+
 ### Storage fallback
 
 Cloud Storage FUSE is a supported fallback, not the default assumption for HDF5/netCDF random reads. If the original file representation must be used, test the exact workflow with GCS FUSE caching or stage the hot subset to a read-only persistent or node-local disk.
@@ -605,6 +691,7 @@ singleuser:
 
   extraEnv:
     TEMPO_DATA_URI: gs://WORKSHOP_BUCKET/tempo/optimized.zarr
+    WORKSHOP_CONTEXT_DATA_URI: gs://WORKSHOP_BUCKET/context
     EARTH2STUDIO_MODEL_CACHE: /opt/earth2/cache/models
     EARTH2STUDIO_DATA_CACHE: /home/jovyan/.cache/earth2studio/data
 

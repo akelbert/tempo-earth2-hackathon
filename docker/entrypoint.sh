@@ -37,7 +37,8 @@ try:
     info = describe_environment()
     keys = ("python", "torch", "cuda_available", "gpu_name", "gpu_memory_gb",
             "compute_capability", "earth2studio", "glue_jupyter",
-            "tempo_data_uri", "model_cache", "model_cache_free_gb")
+            "workshop_data_uri", "tempo_data_uri", "context_data_uri", "model_cache",
+            "model_cache_free_gb")
     print("[earth2-lab] " + json.dumps({k: info.get(k) for k in keys}))
 except Exception as exc:
     print(f"[earth2-lab] environment probe error: {exc}")

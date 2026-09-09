@@ -13,6 +13,7 @@ __pycache__/
 # Data and outputs never belong in the image.
 data/
 outputs/
+benchmark-results/
 *.zarr/
 *.nc
 

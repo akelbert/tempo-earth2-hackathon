@@ -140,7 +140,9 @@ singleuser:
       privateIPs: false
 
   extraEnv:
+    WORKSHOP_DATA_URI: "${WORKSHOP_DATA_URI}"
     TEMPO_DATA_URI: "${TEMPO_DATA_URI}"
+    WORKSHOP_CONTEXT_DATA_URI: "${WORKSHOP_CONTEXT_DATA_URI}"
     EARTH2STUDIO_MODEL_CACHE: /opt/earth2/cache/models
     EARTH2STUDIO_DATA_CACHE: /home/jovyan/.cache/earth2studio/data
     WORKSHOP_RELEASE: "${WORKSHOP_RELEASE}"

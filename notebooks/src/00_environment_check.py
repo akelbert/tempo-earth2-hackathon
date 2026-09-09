@@ -211,4 +211,5 @@ for command in ("restore-workshop-notebooks", "reset-user-environment"):
 # %% [markdown]
 # ---
 #
-# If everything above looks right, open **`01_tempo_earth2_intro.ipynb`**.
+# If everything above looks right, open
+# **`01_data_and_model_catalog.ipynb`**, then **`01_tempo_earth2_intro.ipynb`**.

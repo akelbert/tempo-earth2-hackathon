@@ -39,6 +39,7 @@ glue-jupyter==0.29.0
 
 # --- Geoscience / analysis ---------------------------------------------------
 matplotlib==3.11.1
+pandas==3.0.2
 cartopy==0.25.0
 h5netcdf==1.8.1
 # Earth2Studio constrains netCDF4 to <1.7.3 (Unidata/netcdf4-python#1438).

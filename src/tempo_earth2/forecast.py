@@ -16,22 +16,12 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-#: Earth2Studio prognostic models the workshop knows about, mapped to the pip
-#: extra that provides them.
-#:
-#: Only the extras listed in the Dockerfile's ``EARTH2STUDIO_EXTRAS`` are
-#: actually installed - by default just ``fcn``. The others are here so that
-#: swapping the workshop model is a one-line change in two files rather than an
-#: archaeology exercise. Selecting an uninstalled model raises Earth2Studio's
-#: own optional-dependency error, which names the missing extra; the image
-#: installs nothing at runtime, so the fix is a rebuild, not a pip install.
+#: Live prognostic models guaranteed by the released attendee image. This is
+#: intentionally narrower than ``model_catalog.json``: catalog candidates are
+#: useful for planning, but an attendee-facing API must not advertise an extra
+#: that was never installed or a model that did not pass the L4 benchmark.
 SUPPORTED_MODELS: dict[str, str] = {
     "FCN": "fcn",
-    "SFNO": "sfno",
-    "DLWP": "dlwp",
-    "FCN3": "fcn3",
-    "GraphCastOperational": "graphcast",
-    "Aurora": "aurora",
 }
 
 #: Near-surface and boundary-layer fields relevant to NO2 transport. Requesting
@@ -41,11 +31,7 @@ TRANSPORT_VARIABLES = ("u10m", "v10m", "u100m", "v100m", "t2m", "msl", "u850", "
 #: Earth2Studio prognostic models advance the state on a fixed timestep.
 MODEL_TIMESTEP_HOURS: dict[str, int] = {
     "FCN": 6,
-    "SFNO": 6,
     "DLWP": 6,
-    "FCN3": 6,
-    "GraphCastOperational": 6,
-    "Aurora": 6,
 }
 
 
@@ -110,8 +96,10 @@ def load_model(model_name: str = "FCN"):
     """Load an Earth2Studio prognostic model from its default package."""
     if model_name not in SUPPORTED_MODELS:
         raise ValueError(
-            f"{model_name!r} is not in the workshop image. "
-            f"Available: {', '.join(sorted(SUPPORTED_MODELS))}"
+            f"{model_name!r} is not guaranteed by the released workshop image. "
+            f"Live models: {', '.join(sorted(SUPPORTED_MODELS))}. "
+            "See tempo_earth2.catalog.model_entries() for candidates and "
+            "precomputed-only models."
         )
     try:
         from earth2studio.models import px

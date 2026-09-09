@@ -35,6 +35,7 @@ LABEL org.opencontainers.image.title="Earth-2 Lab" \
 # ---------------------------------------------------------------------------
 ARG EARTH2STUDIO_VERSION=0.17.0
 ARG EARTH2STUDIO_EXTRAS=fcn,data,utils
+ARG EARTH2STUDIO_IMPORT_CHECK="from earth2studio.models.px import FCN"
 ARG UV_VERSION=0.11.26
 ARG NB_USER=jovyan
 ARG NB_UID=1000
@@ -147,6 +148,7 @@ from earth2studio.models.px import FCN; \
 print('earth2studio', earth2studio.__version__); \
 print('torch', torch.__version__, 'cuda', torch.version.cuda); \
 print('jupyterhub', jupyterhub.__version__)"
+RUN python -c "${EARTH2STUDIO_IMPORT_CHECK}"
 
 # ---------------------------------------------------------------------------
 # Workshop layout.
@@ -161,6 +163,8 @@ ENV EARTH2_ROOT=/opt/earth2 \
     WORKSHOP_REFERENCE_DIR=/opt/earth2/notebooks \
     WORKSHOP_PRECOMPUTED=/opt/earth2/precomputed \
     WORKSHOP_WORK_DIR=/home/${NB_USER}/work \
+    WORKSHOP_DATA_URI=/home/${NB_USER}/work/data \
+    WORKSHOP_CONTEXT_DATA_URI=/home/${NB_USER}/work/data/context \
     EARTH2STUDIO_MODEL_CACHE=/opt/earth2/cache/models \
     EARTH2STUDIO_DATA_CACHE=/home/${NB_USER}/.cache/earth2studio/data \
     EARTH2STUDIO_PACKAGE_TIMEOUT=900 \

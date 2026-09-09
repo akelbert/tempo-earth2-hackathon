@@ -27,6 +27,14 @@ output "tempo_data_uri" {
   value = "gs://${google_storage_bucket.tempo_data.name}/tempo/northeast.zarr"
 }
 
+output "workshop_data_uri" {
+  value = "gs://${google_storage_bucket.tempo_data.name}"
+}
+
+output "context_data_uri" {
+  value = "gs://${google_storage_bucket.tempo_data.name}/context"
+}
+
 output "attendee_service_account" {
   value = google_service_account.attendee.email
 }

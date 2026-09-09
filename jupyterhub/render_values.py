@@ -25,6 +25,8 @@ REQUIRED = {
     "TLS_CERTIFICATE_NAME",
     "WORKSHOP_ADMIN_USERNAME",
     "WORKSHOP_ALLOWED_USERS",
+    "WORKSHOP_CONTEXT_DATA_URI",
+    "WORKSHOP_DATA_URI",
     "WORKSHOP_RELEASE",
 }
 
@@ -85,13 +87,17 @@ def validate(values: dict[str, str]) -> None:
     if not RELEASE.fullmatch(values["WORKSHOP_RELEASE"]):
         raise SystemExit("WORKSHOP_RELEASE contains unsafe characters")
 
-    tempo_uri = values["TEMPO_DATA_URI"]
-    if (
-        not tempo_uri.startswith("gs://")
-        or "/" not in tempo_uri.removeprefix("gs://")
-        or any(character.isspace() or character in "\"'\\" for character in tempo_uri)
-    ):
-        raise SystemExit("TEMPO_DATA_URI must be a safe gs://bucket/path URI")
+    for name in ("TEMPO_DATA_URI", "WORKSHOP_CONTEXT_DATA_URI", "WORKSHOP_DATA_URI"):
+        uri = values[name]
+        location = uri.removeprefix("gs://")
+        if (
+            not uri.startswith("gs://")
+            or not location
+            or (name != "WORKSHOP_DATA_URI" and "/" not in location)
+            or any(character.isspace() or character in "\"'\\" for character in uri)
+        ):
+            suffix = "bucket[/path]" if name == "WORKSHOP_DATA_URI" else "bucket/path"
+            raise SystemExit(f"{name} must be a safe gs://{suffix} URI")
 
 
 def main() -> int:

@@ -29,7 +29,7 @@ deploys by digest.
 
 The template is not a deployable values file. Rendering refuses unresolved
 placeholders, mutable image tags, unsafe usernames, an empty allow-list, or a
-non-GCS TEMPO path.
+non-GCS workshop data path.
 
 ```bash
 export HUB_IMAGE_REFERENCE='REGION-docker.pkg.dev/PROJECT/REPOSITORY/earth2-hub@sha256:...'
@@ -39,7 +39,9 @@ export INGRESS_IP_NAME="$(terraform -chdir=../terraform output -raw ingress_ip_n
 export TLS_CERTIFICATE_NAME="$(terraform -chdir=../terraform output -raw tls_certificate_name)"
 export STORAGE_CLASS_NAME="$(terraform -chdir=../terraform output -raw user_storage_class)"
 export KUBERNETES_SERVICE_ACCOUNT="$(terraform -chdir=../terraform output -raw kubernetes_service_account)"
+export WORKSHOP_DATA_URI="$(terraform -chdir=../terraform output -raw workshop_data_uri)"
 export TEMPO_DATA_URI="$(terraform -chdir=../terraform output -raw tempo_data_uri)"
+export WORKSHOP_CONTEXT_DATA_URI="$(terraform -chdir=../terraform output -raw context_data_uri)"
 export WORKSHOP_RELEASE='2026-09-rc1'
 export WORKSHOP_ADMIN_USERNAME='actual-admin-username'
 export WORKSHOP_ALLOWED_USERS='actual-admin-username,attendee1,attendee2'

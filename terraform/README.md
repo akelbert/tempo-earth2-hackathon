@@ -59,7 +59,9 @@ After apply:
 ```bash
 terraform output -raw get_credentials_command
 terraform output -raw ingress_ip
+terraform output -raw workshop_data_uri
 terraform output -raw tempo_data_uri
+terraform output -raw context_data_uri
 ```
 
 Before deploying the Ingress, protect and upload the institution-provided key

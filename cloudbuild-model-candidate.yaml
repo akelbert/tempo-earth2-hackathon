@@ -1,0 +1,52 @@
+# Build and push a non-deployable Earth2Studio candidate image.
+#
+# This deliberately does not update JupyterHub. The resulting digest is an
+# input to the target-L4 benchmark; only a reviewed, passing model is promoted
+# into the normal cloudbuild.yaml release path.
+
+substitutions:
+  _REGION: us-central1
+  _REPOSITORY: earth2
+  _IMAGE: earth2-lab
+  _CANDIDATE_RELEASE: model-candidate-dev
+  _E2S_VERSION: "0.17.0"
+  _EARTH2STUDIO_EXTRAS: fcn,dlwp,precip-afno,data,utils
+  _EARTH2STUDIO_IMPORT_CHECK: 'from earth2studio.models.px import FCN, DLWP; from earth2studio.models.dx import PrecipitationAFNO'
+
+options:
+  machineType: E2_HIGHCPU_32
+  diskSizeGb: 500
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 5400s
+
+steps:
+  - id: build-candidate
+    name: gcr.io/cloud-builders/docker
+    env: ["DOCKER_BUILDKIT=1"]
+    args:
+      - build
+      - --build-arg=EARTH2STUDIO_VERSION=${_E2S_VERSION}
+      - --build-arg=EARTH2STUDIO_EXTRAS=${_EARTH2STUDIO_EXTRAS}
+      - --build-arg=EARTH2STUDIO_IMPORT_CHECK=${_EARTH2STUDIO_IMPORT_CHECK}
+      - --build-arg=PREFETCH_MODEL=false
+      - -f=docker/Dockerfile
+      - -t=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_CANDIDATE_RELEASE}
+      - .
+
+  - id: push-candidate
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_CANDIDATE_RELEASE}
+
+  - id: record-candidate-digest
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        gcloud artifacts docker images describe \
+          ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_CANDIDATE_RELEASE} \
+          --format='value(image_summary.fully_qualified_digest)' \
+          | tee /workspace/model-candidate-image-reference.txt

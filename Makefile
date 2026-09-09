@@ -14,10 +14,12 @@ SHELL := /bin/bash
 
 REGION       ?= us-central1
 PROJECT      ?= $(shell gcloud config get-value project 2>/dev/null)
-TF_REPOSITORY := $(shell terraform -chdir=terraform output -raw artifact_registry_repository_id 2>/dev/null)
+# Keep Terraform lookup lazy: local-only targets must not wait on remote state.
+TF_REPOSITORY = $(shell terraform -chdir=terraform output -raw artifact_registry_repository_id 2>/dev/null)
 REPOSITORY   ?= $(if $(TF_REPOSITORY),$(TF_REPOSITORY),tempo-earth2-dev)
 IMAGE        ?= earth2-lab
 RELEASE      ?= dev
+CANDIDATE_RELEASE ?= model-candidate-$(RELEASE)
 REGISTRY     ?= $(REGION)-docker.pkg.dev/$(PROJECT)/$(REPOSITORY)
 TAG          ?= $(REGISTRY)/$(IMAGE):$(RELEASE)
 LOCAL_TAG    ?= $(IMAGE):$(RELEASE)
@@ -54,7 +56,13 @@ check: ## Notebooks current, lint clean, analysis correct (no Docker, no GPU)
 	$(PYTHON) -m ruff check src scripts jupyterhub/render_values.py
 	$(PYTHON) scripts/smoke_test.py
 	$(PYTHON) scripts/test_notebook.py --notebook notebooks/00_environment_check.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/01_data_and_model_catalog.ipynb
 	$(PYTHON) scripts/test_notebook.py --notebook notebooks/01_tempo_earth2_intro.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/02_tempo_column_vs_surface.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/03_smoke_event.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/04_wetland_response.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/05_scale_matters.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/06_bring_your_own_site.ipynb
 
 .PHONY: venv
 venv: ## Local development environment
@@ -84,6 +92,37 @@ build-baked: notebooks ## Build with the model checkpoint baked into the image
 	  -t $(LOCAL_TAG) \
 	  .
 
+.PHONY: build-candidate
+build-candidate: notebooks ## Build a non-deployable image for FCN/DLWP/precipitation validation
+	docker build \
+	  --platform $(PLATFORM) \
+	  --build-arg EARTH2STUDIO_VERSION=$(E2S_VERSION) \
+	  --build-arg EARTH2STUDIO_EXTRAS=fcn,dlwp,precip-afno,data,utils \
+	  --build-arg 'EARTH2STUDIO_IMPORT_CHECK=from earth2studio.models.px import FCN, DLWP; from earth2studio.models.dx import PrecipitationAFNO' \
+	  -f docker/Dockerfile \
+	  -t $(LOCAL_TAG)-candidate \
+	  .
+
+.PHONY: benchmark-candidates
+benchmark-candidates: ## Benchmark candidate prognostics on the current GPU
+	mkdir -p $(PWD)/benchmark-results/model-cache
+	docker run --rm --gpus all \
+	  -v $(PWD)/benchmark-results:/results \
+	  -v $(PWD)/benchmark-results/model-cache:/opt/earth2/cache/models \
+	  -e EARTH2STUDIO_MODEL_CACHE=/opt/earth2/cache/models \
+	  $(LOCAL_TAG)-candidate \
+	  python /opt/earth2/scripts/benchmark_models.py \
+	    --model FCN DLWP --init-time 2026-05-31T12:00 \
+	    --output /results/model-benchmark.json
+	docker run --rm --gpus all \
+	  -v $(PWD)/benchmark-results:/results \
+	  -v $(PWD)/benchmark-results/model-cache:/opt/earth2/cache/models \
+	  -e EARTH2STUDIO_MODEL_CACHE=/opt/earth2/cache/models \
+	  $(LOCAL_TAG)-candidate \
+	  python /opt/earth2/scripts/benchmark_precipitation.py \
+	    --init-time 2026-05-31T12:00 \
+	    --output /results/precipitation-benchmark.json
+
 .PHONY: cloud-build
 cloud-build: notebooks ## Build on Cloud Build and push to Artifact Registry
 	@test -n "$(PROJECT)" || { echo "Set PROJECT to the target Google Cloud project"; exit 1; }
@@ -95,6 +134,19 @@ cloud-build: notebooks ## Build on Cloud Build and push to Artifact Registry
 	  --service-account=$(BUILD_SERVICE_ACCOUNT) \
 	  --gcs-source-staging-dir=gs://$(BUILD_SOURCE_BUCKET)/source \
 	  --substitutions=_REGION=$(REGION),_REPOSITORY=$(REPOSITORY),_IMAGE=$(IMAGE),_HUB_IMAGE=$(HUB_IMAGE),_RELEASE=$(RELEASE),_E2S_VERSION=$(E2S_VERSION),_PREFETCH_MODEL=true \
+	  .
+
+.PHONY: cloud-build-candidate
+cloud-build-candidate: notebooks ## Build/push candidate extras without changing JupyterHub
+	@test -n "$(PROJECT)" || { echo "Set PROJECT to the target Google Cloud project"; exit 1; }
+	@test -n "$(BUILD_SERVICE_ACCOUNT)" || { echo "Set BUILD_SERVICE_ACCOUNT (or apply Terraform first)"; exit 1; }
+	@test -n "$(BUILD_SOURCE_BUCKET)" || { echo "Set BUILD_SOURCE_BUCKET (or apply Terraform first)"; exit 1; }
+	gcloud builds submit \
+	  --project=$(PROJECT) \
+	  --config cloudbuild-model-candidate.yaml \
+	  --service-account=$(BUILD_SERVICE_ACCOUNT) \
+	  --gcs-source-staging-dir=gs://$(BUILD_SOURCE_BUCKET)/source \
+	  --substitutions=_REGION=$(REGION),_REPOSITORY=$(REPOSITORY),_IMAGE=$(IMAGE),_CANDIDATE_RELEASE=$(CANDIDATE_RELEASE),_E2S_VERSION=$(E2S_VERSION) \
 	  .
 
 .PHONY: push
@@ -143,9 +195,11 @@ TEMPO_URI ?= $(PWD)/data/tempo/northeast.zarr
 .PHONY: run
 run: ## Run the image locally with a GPU
 	docker run --rm -it --gpus all \
-	  -p 8888:8888 \
+	  -p 127.0.0.1:8888:8888 \
 	  -v $(PWD)/data:/home/jovyan/work/data \
+	  -e WORKSHOP_DATA_URI=/home/jovyan/work/data \
 	  -e TEMPO_DATA_URI=/home/jovyan/work/data/tempo/northeast.zarr \
+	  -e WORKSHOP_CONTEXT_DATA_URI=/home/jovyan/work/data/context \
 	  -e WORKSHOP_RELEASE=$(RELEASE) \
 	  $(LOCAL_TAG) \
 	  jupyter lab --ip=0.0.0.0 --no-browser --ServerApp.token=''
@@ -165,6 +219,15 @@ DEMO_DATA ?= $(PWD)/data
 .PHONY: demo-data
 demo-data: ## Synthetic TEMPO scans with a known answer (no Earthdata login)
 	$(PYTHON) scripts/make_demo_data.py --output $(DEMO_DATA)
+	$(MAKE) teaching-data TEMPO_URI=$(DEMO_DATA)/tempo/northeast.zarr CONTEXT_DATA=$(DEMO_DATA)/context
+
+CONTEXT_DATA ?= $(PWD)/data/context
+
+.PHONY: teaching-data
+teaching-data: ## Synthetic context fixtures aligned to the staged TEMPO case
+	$(PYTHON) scripts/make_teaching_data.py \
+	  --tempo $(TEMPO_URI) \
+	  --output $(CONTEXT_DATA)
 
 # ---------------------------------------------------------------------------
 
@@ -186,10 +249,26 @@ stage-dry-run: ## Show which granules would be staged, download nothing
 	  --date $(STAGE_DATE) --region $(STAGE_REGION) --scans $(STAGE_SCANS) \
 	  --output data/tempo/$(STAGE_REGION).zarr --dry-run
 
+.PHONY: stage-aqs
+stage-aqs: ## Stage EPA surface NO2/O3/PM2.5 for the TEMPO case date
+	$(PYTHON) scripts/stage_aqs.py --date $(STAGE_DATE) \
+	  --region $(STAGE_REGION) --output data/context/aqs/$(STAGE_DATE).csv
+
+AQS_START ?= 2025-09-01
+AQS_END   ?= 2026-06-01
+
+.PHONY: stage-aqs-explore
+stage-aqs-explore: ## Stage a broader, compressed EPA AQS regional collection
+	$(PYTHON) scripts/stage_aqs.py \
+	  --start-date $(AQS_START) --end-date $(AQS_END) \
+	  --region $(STAGE_REGION) \
+	  --partition-by-month --output data/context/aqs/by-month
+
 .PHONY: publish-data
-publish-data: ## Copy the staged TEMPO subset to the workshop bucket
+publish-data: ## Copy staged TEMPO and context data to the workshop bucket
 	@test -n "$(BUCKET)" || { echo "Set BUCKET=gs://..."; exit 1; }
 	gcloud storage rsync -r data/tempo $(BUCKET)/tempo
+	gcloud storage rsync -r data/context $(BUCKET)/context
 
 .PHONY: clean
 clean: ## Remove build artefacts (never touches data/)
