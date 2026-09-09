@@ -40,7 +40,9 @@ DEFAULT_TEMPO_VERSION = "V04"
 class WorkshopConfig:
     """Resolved locations and identifiers for one workshop environment."""
 
+    data_uri: str
     tempo_uri: str
+    context_uri: str
     model_cache: Path
     data_cache: Path
     outputs: Path
@@ -57,7 +59,11 @@ class WorkshopConfig:
         work_dir = Path(os.environ.get("WORKSHOP_WORK_DIR", home / "work"))
         outputs = Path(os.environ.get("WORKSHOP_OUTPUTS", work_dir / "outputs"))
         cfg = cls(
+            data_uri=os.environ.get("WORKSHOP_DATA_URI", str(work_dir / "data")),
             tempo_uri=os.environ.get("TEMPO_DATA_URI", str(work_dir / "data" / "tempo")),
+            context_uri=os.environ.get(
+                "WORKSHOP_CONTEXT_DATA_URI", str(work_dir / "data" / "context")
+            ),
             model_cache=Path(
                 os.environ.get(
                     "EARTH2STUDIO_MODEL_CACHE", home / ".cache" / "earth2studio"
@@ -160,7 +166,9 @@ def describe_environment() -> dict[str, Any]:
             info[package] = "not installed"
 
     cfg = WorkshopConfig.from_env()
+    info["workshop_data_uri"] = cfg.data_uri
     info["tempo_data_uri"] = cfg.tempo_uri
+    info["context_data_uri"] = cfg.context_uri
     info["model_cache"] = str(cfg.model_cache)
     info["data_cache"] = str(cfg.data_cache)
     info["model_cache_writable"] = os.access(cfg.model_cache, os.W_OK)

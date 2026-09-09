@@ -7,7 +7,9 @@ plain xarray/numpy/torch and can be imported and tested without a GPU; only
 
 __version__ = "0.1.0"
 
+from tempo_earth2.catalog import data_entries, model_entries
 from tempo_earth2.config import WorkshopConfig, describe_environment
+from tempo_earth2.context import data_root, data_uri, read_aqs_month
 from tempo_earth2.tempo import (
     NO2_TROPOSPHERIC,
     REGIONS,
@@ -22,8 +24,13 @@ __all__ = [
     "REGIONS",
     "Region",
     "WorkshopConfig",
+    "data_entries",
+    "data_root",
+    "data_uri",
     "describe_environment",
     "load_tempo_scan",
     "load_tempo_series",
+    "model_entries",
     "open_tempo_source",
+    "read_aqs_month",
 ]

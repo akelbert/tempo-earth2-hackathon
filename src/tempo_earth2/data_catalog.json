@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "updated_utc": "2026-09-09T00:00:00Z",
+  "policy": {
+    "examples": "Small, versioned, analysis-ready slices in the workshop bucket make the starter notebooks reliable.",
+    "exploration": "Broader regional and temporal collections remain in Cloud Storage and are subset before loading.",
+    "direct": "Very large public archives remain at their authoritative cloud/API source; the workshop supplies discovery and subsetting helpers instead of copying entire archives."
+  },
+  "datasets": [
+    {
+      "id": "tempo-aqs-2026-05-31",
+      "title": "TEMPO + EPA AQS matched Northeast case",
+      "provider": "NASA ASDC and US EPA",
+      "themes": ["air quality", "surface exposure", "validation", "introductory"],
+      "access_mode": "workshop",
+      "workshop_root_env": "WORKSHOP_DATA_URI",
+      "workshop_relative_path": "tempo/cases/2026-05-31/northeast.zarr",
+      "format": "consolidated Zarr plus context/aqs/2026-05-31.csv",
+      "source_url": "https://www.earthdata.nasa.gov/data/instruments/tempo",
+      "source_access": "The workshop copy is read-only; provenance manifests point to the NASA and EPA sources.",
+      "workshop_status": "real matched case",
+      "notes": "Six TEMPO V04 scans from 14:06–19:06 UTC and same-day regional hourly AQS observations."
+    },
+    {
+      "id": "tempo-no2",
+      "title": "NASA TEMPO Level 3 NO2",
+      "provider": "NASA ASDC",
+      "themes": ["air quality", "atmospheric chemistry", "transport", "plant stress"],
+      "access_mode": "workshop-and-source",
+      "workshop_root_env": "TEMPO_DATA_URI",
+      "workshop_relative_path": null,
+      "format": "consolidated Zarr",
+      "source_url": "https://www.earthdata.nasa.gov/data/instruments/tempo",
+      "source_access": "NASA Earthdata login is required for preparation-time granule downloads.",
+      "workshop_status": "example-live; exploration collection expanding",
+      "notes": "The event copy contains quality-screening variables and regional/time subsets, not the entire mission archive."
+    },
+    {
+      "id": "epa-aqs",
+      "title": "EPA Air Quality System hourly observations",
+      "provider": "US EPA",
+      "themes": ["air quality", "surface exposure", "validation"],
+      "access_mode": "workshop-and-source",
+      "workshop_root_env": "WORKSHOP_CONTEXT_DATA_URI",
+      "workshop_relative_path": "aqs",
+      "format": "CSV or monthly CSV.gz partitions",
+      "source_url": "https://aqs.epa.gov/aqsweb/airdata/download_files.html",
+      "source_access": "Public bulk downloads; recent-year archives can lag the current date.",
+      "workshop_status": "stager-ready",
+      "notes": "Hourly NO2, O3, and PM2.5 are available as notebook-sized cases and broader monthly partitions, avoiding a full national-archive download."
+    },
+    {
+      "id": "noaa-gfs",
+      "title": "NOAA Global Forecast System",
+      "provider": "NOAA",
+      "themes": ["weather", "transport", "model initialization"],
+      "access_mode": "direct",
+      "format": "GRIB via Earth2Studio datasource",
+      "source_url": "https://registry.opendata.aws/noaa-gfs-bdp-pds/",
+      "source_access": "Public cloud archive; Earth2Studio's GFS datasource is the supported notebook path.",
+      "workshop_status": "live",
+      "notes": "Inputs are cached per attendee; request only the times and variables needed."
+    },
+    {
+      "id": "noaa-hrrr",
+      "title": "NOAA High-Resolution Rapid Refresh",
+      "provider": "NOAA",
+      "themes": ["regional weather", "smoke transport", "storms", "downscaling"],
+      "access_mode": "direct",
+      "direct_uri": "s3://noaa-hrrr-bdp-pds/",
+      "format": "GRIB2 and community Zarr",
+      "source_url": "https://registry.opendata.aws/noaa-hrrr-pds/",
+      "source_access": "Public, no cloud account required.",
+      "workshop_status": "discoverable",
+      "notes": "Do not recursively download the archive. Select a run, forecast hour, region, and variables."
+    },
+    {
+      "id": "nasa-hls",
+      "title": "NASA Harmonized Landsat Sentinel-2",
+      "provider": "NASA LP DAAC",
+      "themes": ["vegetation", "plant stress", "wildfire", "wetlands", "coastal"],
+      "access_mode": "source-then-mirror",
+      "format": "Cloud Optimized GeoTIFF",
+      "source_url": "https://www.earthdata.nasa.gov/data/projects/hls",
+      "source_access": "Discover through NASA CMR/STAC; Earthdata authentication may be required for asset access.",
+      "workshop_status": "connector-planned",
+      "notes": "Mirror selected tiles/time windows into GCS because NASA cloud-hosted assets can be region- and credential-bound."
+    },
+    {
+      "id": "nasa-firms",
+      "title": "NASA FIRMS active fire detections",
+      "provider": "NASA",
+      "themes": ["wildfire", "smoke", "ecosystem disturbance"],
+      "access_mode": "source-then-mirror",
+      "format": "CSV, SHP, or API response",
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/",
+      "source_access": "Recent API access uses a MAP_KEY; archive downloads use Earthdata services.",
+      "workshop_status": "connector-planned",
+      "notes": "Keep credentials out of images and notebooks; publish reviewed case extracts to the workshop bucket."
+    },
+    {
+      "id": "usgs-nwis",
+      "title": "USGS National Water Information System",
+      "provider": "USGS",
+      "themes": ["streamflow", "floods", "groundwater", "water quality"],
+      "access_mode": "direct",
+      "format": "Water Services JSON",
+      "source_url": "https://waterservices.usgs.gov/",
+      "source_access": "Public API, no account required.",
+      "workshop_status": "helper-live",
+      "notes": "Use bounded sites, parameters, and time windows; cache useful workshop queries in GCS."
+    },
+    {
+      "id": "noaa-coops",
+      "title": "NOAA CO-OPS tides and currents",
+      "provider": "NOAA",
+      "themes": ["coastal flooding", "sea level", "salinity", "marshes"],
+      "access_mode": "direct",
+      "format": "Data API JSON",
+      "source_url": "https://api.tidesandcurrents.noaa.gov/api/prod/",
+      "source_access": "Public API, no account required.",
+      "workshop_status": "helper-live",
+      "notes": "Use station/date-bounded queries and identify units and datum explicitly."
+    },
+    {
+      "id": "epa-castnet",
+      "title": "EPA Clean Air Status and Trends Network",
+      "provider": "US EPA",
+      "themes": ["dry deposition", "nitrogen", "ozone", "ecosystems"],
+      "access_mode": "source-then-mirror",
+      "format": "Tabular downloads",
+      "source_url": "https://www.epa.gov/castnet/download-data",
+      "source_access": "Public downloads.",
+      "workshop_status": "stager-planned",
+      "notes": "A high-priority addition for wetland and nitrogen-deposition teams."
+    },
+    {
+      "id": "forestgeo-and-project-data",
+      "title": "ForestGEO and investigator-provided site data",
+      "provider": "Smithsonian and workshop investigators",
+      "themes": ["biodiversity", "forests", "eDNA", "tree mortality", "scaling"],
+      "access_mode": "controlled",
+      "format": "dataset-specific",
+      "source_url": "https://forestgeo.si.edu/explore-data/serc-termsconditionsrequest-data",
+      "source_access": "Dataset terms and investigator approval apply; public-bucket access must not be assumed.",
+      "workshop_status": "requires-data-owner-handoff",
+      "notes": "Place approved collections under a controlled bucket prefix with provenance and terms, not in the public image."
+    }
+  ]
+}

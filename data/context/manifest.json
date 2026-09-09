@@ -1,0 +1,14 @@
+{
+  "title": "Living Earth Twin workshop teaching fixtures",
+  "synthetic": true,
+  "warning": "For instruction and automated tests only; not scientific evidence.",
+  "datasets": [
+    "aqs/<tempo-date>.csv",
+    "demo/meteorology.nc",
+    "demo/smoke_air_quality.csv",
+    "demo/fire_detections.csv",
+    "demo/wetland_timeseries.csv",
+    "demo/site_timeseries.csv",
+    "demo/land_surface.nc"
+  ]
+}

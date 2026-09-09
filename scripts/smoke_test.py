@@ -16,10 +16,16 @@ be found by an attendee staring at a plume pointing the wrong way.
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+
+# Some managed shells expose a read-only ~/.config. Keep Matplotlib's font
+# cache in a task-specific writable directory so a smoke test never stalls on
+# repeated cache generation.
+os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "tempo-earth2-mpl"))
 
 import matplotlib
 
@@ -30,7 +36,7 @@ import xarray as xr
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from tempo_earth2 import advect, forecast, plots
+from tempo_earth2 import advect, catalog, forecast, plots, sources
 from tempo_earth2.tempo import (
     REGIONS,
     apply_quality_mask,
@@ -289,6 +295,24 @@ def main() -> int:
         stamp = granule_time("TEMPO_NO2_L3_V04_20260615T170903Z_S009.nc")
         check("granule_time parses", stamp == datetime(2026, 6, 15, 17, 9, 3, tzinfo=UTC),
               str(stamp))
+
+        print("\nCatalog and bounded-source helpers")
+        guaranteed = catalog.model_entries(("guaranteed",))
+        check("catalog has a guaranteed FCN", any(item["id"] == "fcn" for item in guaranteed))
+        check("catalog does not promise DLWP live",
+              not next(item for item in catalog.model_entries() if item["id"] == "dlwp")["live_inference"])
+        data = catalog.data_entries(("wildfire",))
+        check("wildfire catalog spans multiple sources", len(data) >= 2, str([item["id"] for item in data]))
+        usgs_url = sources.usgs_instantaneous_values_url(
+            "01100000", "2026-06-01", "2026-06-03"
+        )
+        check("USGS helper bounds sites and dates",
+              "sites=01100000" in usgs_url and "startDT=2026-06-01" in usgs_url)
+        coops_url = sources.noaa_coops_url(
+            "8443970", "2026-06-01", "2026-06-03"
+        )
+        check("CO-OPS helper fixes UTC and units",
+              "time_zone=gmt" in coops_url and "units=metric" in coops_url)
 
     print(f"\n{len(PASSED)} checks passed.")
     return 0

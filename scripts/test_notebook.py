@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import _synthetic
+import make_teaching_data
 
 DEFAULT_NOTEBOOK = ROOT / "notebooks" / "01_tempo_earth2_intro.ipynb"
 
@@ -45,17 +46,22 @@ def prepare(workspace: Path) -> dict[str, str]:
 
     precomputed = workspace / "precomputed"
     store = _synthetic.write_precomputed(precomputed, "FCN", u_ms=U_MS, v_ms=V_MS)
+    context = make_teaching_data.build(tempo, workspace / "context")
 
     print(f"  TEMPO store       {tempo}")
     print(f"  precomputed       {store}")
+    print(f"  context data      {context}")
 
     return {
         "TEMPO_DATA_URI": str(tempo),
+        "WORKSHOP_DATA_URI": str(workspace),
         "WORKSHOP_PRECOMPUTED": str(precomputed),
+        "WORKSHOP_CONTEXT_DATA_URI": str(context),
         "WORKSHOP_WORK_DIR": str(workspace / "work"),
         "WORKSHOP_OUTPUTS": str(workspace / "work" / "outputs"),
         "EARTH2STUDIO_MODEL_CACHE": str(workspace / "cache" / "models"),
         "EARTH2STUDIO_DATA_CACHE": str(workspace / "cache" / "data"),
+        "MPLCONFIGDIR": str(workspace / "cache" / "matplotlib"),
         "MPLBACKEND": "Agg",
         # Append rather than replace: inside the container the package lives at
         # /opt/earth2/lib and PYTHONPATH already points there. Overwriting it
