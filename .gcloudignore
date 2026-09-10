@@ -4,6 +4,7 @@
 .gcloudignore
 .git/
 .venv/
+.cache/
 .idea/
 .ruff_cache/
 .pytest_cache/

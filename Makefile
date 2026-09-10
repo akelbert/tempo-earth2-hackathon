@@ -20,6 +20,7 @@ REPOSITORY   ?= $(if $(TF_REPOSITORY),$(TF_REPOSITORY),tempo-earth2-dev)
 IMAGE        ?= earth2-lab
 RELEASE      ?= dev
 CANDIDATE_RELEASE ?= model-candidate-$(RELEASE)
+CANDIDATE_IMAGE_DIGEST ?=
 REGISTRY     ?= $(REGION)-docker.pkg.dev/$(PROJECT)/$(REPOSITORY)
 TAG          ?= $(REGISTRY)/$(IMAGE):$(RELEASE)
 LOCAL_TAG    ?= $(IMAGE):$(RELEASE)
@@ -53,7 +54,7 @@ notebooks: ## Render notebooks/src/*.py to notebooks/*.ipynb
 .PHONY: check
 check: ## Notebooks current, lint clean, analysis correct (no Docker, no GPU)
 	$(PYTHON) scripts/build_notebooks.py --check
-	$(PYTHON) -m ruff check src scripts jupyterhub/render_values.py
+	$(PYTHON) -m ruff check src scripts jupyterhub/render_values.py jupyterhub/render_benchmark_job.py
 	$(PYTHON) scripts/smoke_test.py
 	$(PYTHON) scripts/test_notebook.py --notebook notebooks/00_environment_check.ipynb
 	$(PYTHON) scripts/test_notebook.py --notebook notebooks/01_data_and_model_catalog.ipynb
@@ -122,6 +123,12 @@ benchmark-candidates: ## Benchmark candidate prognostics on the current GPU
 	  python /opt/earth2/scripts/benchmark_precipitation.py \
 	    --init-time 2026-05-31T12:00 \
 	    --output /results/precipitation-benchmark.json
+
+.PHONY: render-l4-benchmark
+render-l4-benchmark: ## Render (but do not submit) a digest-pinned GKE benchmark Job
+	@test -n "$(CANDIDATE_IMAGE_DIGEST)" || { echo "Set CANDIDATE_IMAGE_DIGEST to image@sha256:..."; exit 1; }
+	$(PYTHON) jupyterhub/render_benchmark_job.py \
+	  --image "$(CANDIDATE_IMAGE_DIGEST)"
 
 .PHONY: cloud-build
 cloud-build: notebooks ## Build on Cloud Build and push to Artifact Registry

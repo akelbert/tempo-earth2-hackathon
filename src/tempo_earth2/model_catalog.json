@@ -11,10 +11,12 @@
     "earth2studio_resolved_commit": "d027d61277229081f9e11c74638260f2ade67631",
     "earth2studio_reported_version": "0.17.0rc0",
     "local_image_id": "sha256:209cf12bc50494b2c7ac4119ae350ecef69cee3764c2afb8f17536263ac90411",
+    "registry_image_digest": "us-central1-docker.pkg.dev/cf-drupal-dev/tempo-earth2-dev/earth2-lab@sha256:54c0346e09833c63d7143ec346fdea2d7c7fe087abba7792889a6577237bf6de",
+    "cloud_build_id": "b1c73892-e6b1-462f-952d-2187a1f798e7",
     "workstation_gpu": "NVIDIA GeForce RTX 2080 SUPER",
     "workstation_gpu_memory_gb": 7.61,
     "validated_utc_date": "2026-09-09",
-    "status": "workstation passed; L4 promotion test pending"
+    "status": "published and workstation-passed; L4 promotion test pending"
   },
   "models": [
     {

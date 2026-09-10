@@ -196,6 +196,7 @@ make build            # local, needs an amd64 Linux host with a GPU
 make build-candidate  # non-deployable FCN/DLWP/precipitation validation image
 make cloud-build-candidate RELEASE=rc1  # build/push it without changing Hub
 make benchmark-candidates  # current GPU; L4 rerun required for promotion
+make render-l4-benchmark CANDIDATE_IMAGE_DIGEST='registry/image@sha256:...'
 make cloud-build      # Cloud Build, produces amd64 without emulation
 make verify-image     # execute 00_environment_check.ipynb inside the image
 make run              # run it locally with a GPU
@@ -204,6 +205,16 @@ make run              # run it locally with a GPU
 To remove the event-day dependency on Hugging Face entirely, bake the checkpoint
 into the image with `make build-baked` — after reviewing that model's license
 for redistribution.
+
+`render-l4-benchmark` writes a one-GPU Job to
+`jupyterhub/.generated/model-benchmark-job.yaml`. Rendering is safe and does
+not contact the cluster. Before applying it, confirm that no demonstration or
+attendee pod needs the available development GPU. The Job uses the exact
+attendee resource envelope, refuses mutable image tags, runs FCN, DLWP, and the
+coupled FCN-to-Precipitation-AFNO workflow, and leaves the JSON evidence in its
+pod log. Candidate checkpoints are downloaded into an ephemeral cache in this
+technical test; promotion into the event image additionally requires terms
+review and checkpoint pre-baking.
 
 `make demo-data DEMO_DATA=/path/to/disposable/demo` writes three Gaussian plumes over the northeast corridor,
 drifting with a constant wind, in the same shape and units as real TEMPO L3.
