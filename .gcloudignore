@@ -13,6 +13,7 @@
 
 data/
 outputs/
+benchmark-results/
 terraform/
 jupyterhub/.generated/
 
