@@ -1,0 +1,106 @@
+{
+  "files": {
+    "airnow_no2_hourly.csv": {
+      "urls": [
+        "https://files.airnowtech.org/airnow/2026/20260615/Monitoring_Site_Locations_V2.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061500.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061501.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061502.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061503.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061504.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061505.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061506.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061507.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061508.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061509.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061510.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061511.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061512.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061513.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061514.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061515.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061516.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061517.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061518.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061519.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061520.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061521.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061522.dat",
+        "https://files.airnowtech.org/airnow/2026/20260615/HourlyData_2026061523.dat"
+      ],
+      "rows": 1987,
+      "staged_utc": "2026-09-15T16:14:41+00:00"
+    },
+    "gfs_fcst_winds.nc": {
+      "urls": [
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f001",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f002",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f003",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f004",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f005",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f006",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f007",
+        "https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.20260615/12/atmos/gfs.t12z.pgrb2.0p25.f008"
+      ],
+      "forecast_init": "2026-06-15T12:00Z",
+      "staged_utc": "2026-09-15T16:15:01+00:00"
+    },
+    "geoscf_fcst_surface_no2.nc": {
+      "urls": [
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1330z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1430z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1530z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1630z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1730z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1830z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_1930z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/fcst/Y2026/M06/D15/GEOS.cf.fcst.aqc_tavg_1hr_glo_L1440x721_slv.20260615_09z%2B20260615_2030z.R0.nc4"
+      ],
+      "staged_utc": "2026-09-15T16:16:25+00:00"
+    },
+    "geoscf_ana_no2_columns.nc": {
+      "urls": [
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1330z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1430z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1530z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1630z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1730z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1830z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_1930z.R0.nc4",
+        "https://portal.nccs.nasa.gov/datashare/gmao/geos-cf/v2/ana/Y2026/M06/D15/GEOS.cf.ana.xgc_tavg_1hr_glo_L1440x721_slv.20260615_2030z.R0.nc4"
+      ],
+      "staged_utc": "2026-09-15T16:16:25+00:00"
+    },
+    "era5_winds.nc": {
+      "urls": [
+        "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
+      ],
+      "staged_utc": "2026-09-15T16:23:53+00:00"
+    }
+  },
+  "case": "TEMPO NO2 forecast intercomparison",
+  "date": "2026-06-15",
+  "bbox": [
+    -81.0,
+    35.0,
+    -65.0,
+    46.0
+  ],
+  "hours_utc": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "tempo_store": "data/tempo/northeast.zarr",
+  "caveats": [
+    "AirNow values are preliminary and not regulatory AQS data.",
+    "CAMS and GEOS-CF assimilate satellite observations; neither is fully independent of TEMPO.",
+    "ERA5 is a reanalysis, not a forecast.",
+    "DestinE Extremes DT output is retained for ~15 days and could not be staged for this date."
+  ]
+}
