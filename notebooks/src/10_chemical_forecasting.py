@@ -613,9 +613,11 @@ if not city_columns.empty:
             if quantity not in label:
                 continue
             rows = city_columns.query("model == @label").sort_values("time")
-            ax.plot(rows.time, rows.model_value, marker="s", label=label)
-            ax.plot(rows.time, rows.TEMPO, marker="o", color="k", alpha=0.6,
-                    label=f"TEMPO ({'trop' if quantity == 'tropospheric' else 'trop+strat'}) on that grid")
+            (line,) = ax.plot(rows.time, rows.model_value, marker="s", label=label)
+            # Each model gets its own TEMPO line: averaged onto that model's
+            # cells (CAMS's 0.4-degree grid may put one cell over the city).
+            ax.plot(rows.time, rows.TEMPO, marker="o", linestyle="--", color=line.get_color(),
+                    alpha=0.8, label=f"TEMPO on {label.split(',')[0]} grid ({int(rows.cells.median())} cells)")
         ax.set_title(f"{CITY_NAME}: {quantity} NO$_2$ column")
         ax.set_ylabel("$10^{15}$ molecules cm$^{-2}$")
         ax.tick_params(axis="x", rotation=30)
@@ -641,7 +643,8 @@ city_columns.round({"TEMPO": 2, "model_value": 2})
 # (1 ppb NO₂ = 1.88 µg m⁻³).
 
 # %%
-airnow = pd.read_csv(CASE_DIR / "airnow_no2_hourly.csv")
+# AQS site ids are identifiers, not numbers; keep leading zeros and join cleanly.
+airnow = pd.read_csv(CASE_DIR / "airnow_no2_hourly.csv", dtype={"station_id": str})
 airnow["time_utc"] = pd.to_datetime(airnow["time_utc"], utc=True)
 city_sites = airnow.loc[airnow.longitude.between(west, east) & airnow.latitude.between(south, north)]
 city_sites = city_sites.rename(columns={"value": "AirNow"})
@@ -649,7 +652,7 @@ print(f"AirNow NO2 monitors in the {CITY_NAME} box: {sorted(city_sites.station_n
 
 geoscf_surface = open_case("geoscf_fcst_surface_no2.nc")
 owm_path = CASE_DIR / "owm_no2_history_nyc.csv"
-owm = pd.read_csv(owm_path, parse_dates=["time_utc"]) if owm_path.is_file() else None
+owm = pd.read_csv(owm_path, dtype={"station_id": str}) if owm_path.is_file() else None
 if owm is None:
     print("  not staged: owm_no2_history_nyc.csv")
 
@@ -687,7 +690,9 @@ if owm is not None:
                             on=["station_id", "time_utc"], how="left")
     MODEL_COLUMNS.append("OpenWeatherMap")
 
-surface = surface.dropna(subset=MODEL_COLUMNS, how="all")
+# Score every model on the same monitor-hours, or the rankings compare
+# different parts of the day (OpenWeatherMap covers 24 h, GEOS-CF 13-20Z).
+surface = surface.dropna(subset=MODEL_COLUMNS, how="any")
 surface_stats = pd.DataFrame(
     [{"model": name, **stats(surface["AirNow"].to_numpy(float), surface[name].to_numpy(float))}
      for name in MODEL_COLUMNS]

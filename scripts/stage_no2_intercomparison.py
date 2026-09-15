@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import io
 import json
 import os
@@ -94,6 +95,9 @@ def _crop(ds: xr.Dataset, bbox, lat="lat", lon="lon") -> xr.Dataset:
         ds = ds.assign_coords({lon: ((ds[lon] + 180.0) % 360.0) - 180.0}).sortby(lon)
     if ds[lat].size > 1 and ds[lat].values[0] > ds[lat].values[-1]:
         ds = ds.sortby(lat)
+    # 279.2 - 360 is -80.80000000000001: round so grids from different requests
+    # align exactly instead of interleaving when merged.
+    ds = ds.assign_coords({lat: ds[lat].round(6), lon: ds[lon].round(6)})
     return ds.sel({lat: slice(south, north), lon: slice(west, east)})
 
 
@@ -414,23 +418,33 @@ def stage_cams(day: date, hours, bbox, out: Path, init_hour: int = 0) -> dict:
         "surface": {**common, "variable": ["nitrogen_dioxide"], "model_level": ["137"],
                     "leadtime_hour": [str(x) for x in leads_3h]},
     }
+    # ADS requests queue for minutes, so raw downloads are cached outside the
+    # repository, keyed by the exact request.
+    cache = Path(os.environ.get("CAMS_CACHE", Path.home() / ".cache" / "tempo-earth2" / "cams"))
+    cache.mkdir(parents=True, exist_ok=True)
     parts = {}
-    with tempfile.TemporaryDirectory(prefix="cams-") as workspace:
-        for label, body in requests.items():
-            target = Path(workspace) / f"{label}.nc"
+    for label, body in requests.items():
+        digest = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()[:16]
+        target = cache / f"{day:%Y%m%d}_{init_hour:02d}z_{label}_{digest}.nc"
+        if target.is_file():
+            print(f"  CAMS {label}: cached {target.name}")
+        else:
             print(f"  CAMS {label} request (init {init:%H}Z, leads {body['leadtime_hour']})")
             client.retrieve(CAMS_DATASET, body, str(target))
-            ds = xr.open_dataset(target, decode_timedelta=False).load()
-            parts[label] = ds
+        # Load and close: Windows refuses to replace or delete an open file.
+        with xr.open_dataset(target, decode_timedelta=False) as ds:
+            parts[label] = ds.load()
 
     def _tidy(ds: xr.Dataset) -> xr.Dataset:
-        ds = ds.rename({k: v for k, v in {"latitude": "lat", "longitude": "lon"}.items() if k in ds.dims})
-        if "valid_time" in ds.coords and "forecast_period" in ds.dims:
-            ds = ds.swap_dims(forecast_period="valid_time")
-        drop = [d for d in ds.dims if d not in ("valid_time", "lat", "lon") and ds.sizes[d] == 1]
-        ds = ds.isel({d: 0 for d in drop}, drop=True)
-        ds = ds.rename(valid_time="time")
-        return _crop(ds, bbox)
+        # ADS NetCDF: (forecast_period, forecast_reference_time[, model_level],
+        # latitude, longitude) with a 2-D valid_time. One run and one level
+        # were requested, so squeeze those and index by valid time.
+        ds = ds.rename(latitude="lat", longitude="lon")
+        single = [d for d in ("forecast_reference_time", "model_level") if d in ds.dims]
+        ds = ds.isel({d: 0 for d in single})
+        ds = ds.swap_dims(forecast_period="valid_time")
+        ds = ds.drop_vars([c for c in ds.coords if c not in ("valid_time", "lat", "lon")])
+        return _crop(ds.rename(valid_time="time"), bbox)
 
     column = _tidy(parts["column"])
     surface = _tidy(parts["surface"])
