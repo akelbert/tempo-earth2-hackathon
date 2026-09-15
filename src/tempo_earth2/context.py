@@ -7,6 +7,7 @@ data use consolidated Zarr; tiny teaching fixtures use NetCDF.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from pathlib import Path
@@ -54,6 +55,17 @@ def read_csv(
     return frame
 
 
+def read_json(relative: str | Path, root: str | Path | None = None):
+    """Read JSON from the configured context root or an object store."""
+    uri = data_uri(relative, root)
+    if uri.startswith(("gs://", "s3://", "http://", "https://")):
+        import fsspec
+
+        with fsspec.open(uri, "rt") as handle:
+            return json.load(handle)
+    return json.loads(Path(uri).read_text())
+
+
 def read_aqs_month(
     month: str,
     root: str | Path | None = None,
@@ -98,7 +110,7 @@ def nearest_grid_values(
             lon=float(row.longitude),
             method="nearest",
         )
-        if "time" in selected.dims or "time" in selected.coords:
+        if "time" in selected.dims:
             selected = selected.sel(
                 time=np.datetime64(getattr(row, time_column).to_datetime64()),
                 method="nearest",

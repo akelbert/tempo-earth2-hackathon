@@ -1,0 +1,37 @@
+{
+  "created_utc": "2026-09-10T02:54:46.975750+00:00",
+  "event_date_utc": "2026-07-16",
+  "analysis_window": [
+    "2026-07-14",
+    "2026-07-20"
+  ],
+  "bbox": [
+    -100.0,
+    35.0,
+    -65.0,
+    56.0
+  ],
+  "sources": {
+    "smoke": "https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/2026/07/hms_smoke20260716.zip",
+    "fires": "https://satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Fire_Points/Shapefile/2026/07/hms_fire20260716.zip",
+    "air_quality": [
+      "https://files.airnowtech.org/airnow/2026/20260714/daily_data_v2.dat",
+      "https://files.airnowtech.org/airnow/2026/20260715/daily_data_v2.dat",
+      "https://files.airnowtech.org/airnow/2026/20260716/daily_data_v2.dat",
+      "https://files.airnowtech.org/airnow/2026/20260717/daily_data_v2.dat",
+      "https://files.airnowtech.org/airnow/2026/20260718/daily_data_v2.dat",
+      "https://files.airnowtech.org/airnow/2026/20260719/daily_data_v2.dat",
+      "https://files.airnowtech.org/airnow/2026/20260720/daily_data_v2.dat"
+    ]
+  },
+  "rows": {
+    "smoke_polygons": 62,
+    "fire_detections": 24165,
+    "airnow_daily_pm25": 4004
+  },
+  "caveats": [
+    "HMS polygons are analyst interpretations of visible satellite smoke, not surface concentrations.",
+    "AirNow observations are preliminary and not regulatory AQS data.",
+    "Coincidence of smoke, fire, PM2.5, wind, and TEMPO fields does not by itself establish attribution."
+  ]
+}

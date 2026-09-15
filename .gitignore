@@ -11,6 +11,9 @@ wheels/
 .cache/
 benchmark-results/
 
+# Real satellite cases are synchronized from the workshop bucket, not Git.
+data/tempo/cases/
+
 # IDE
 .idea/
 

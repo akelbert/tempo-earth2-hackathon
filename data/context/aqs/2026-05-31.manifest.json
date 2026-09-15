@@ -1,0 +1,39 @@
+{
+  "created_utc": "2026-09-09T20:13:27+00:00",
+  "source": "US EPA Air Quality System (AQS)",
+  "source_urls": [
+    "https://aqs.epa.gov/aqsweb/airdata/hourly_42602_2026.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/hourly_44201_2026.zip",
+    "https://aqs.epa.gov/aqsweb/airdata/hourly_88101_2026.zip"
+  ],
+  "start_date_utc": "2026-05-31",
+  "end_date_utc": "2026-05-31",
+  "region": "northeast",
+  "bbox": [
+    -80.0,
+    36.0,
+    -66.0,
+    45.0
+  ],
+  "parameters": [
+    "NO2",
+    "O3",
+    "PM2.5"
+  ],
+  "source_archive_coverage": {
+    "NO2-2026": {
+      "first_utc": "2026-01-01",
+      "last_utc": "2026-06-01"
+    },
+    "O3-2026": {
+      "first_utc": "2026-01-01",
+      "last_utc": "2026-06-01"
+    },
+    "PM2.5-2026": {
+      "first_utc": "2026-01-01",
+      "last_utc": "2026-06-01"
+    }
+  },
+  "rows": 2228,
+  "processing": "Mean of duplicate POC/method observations by station and UTC hour."
+}

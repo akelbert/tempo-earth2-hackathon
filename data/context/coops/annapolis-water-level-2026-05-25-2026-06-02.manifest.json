@@ -1,0 +1,13 @@
+{
+  "created_utc": "2026-09-10T02:02:47+00:00",
+  "source": "NOAA CO-OPS Data API",
+  "source_url": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&application=tempo-earth2-workshop&begin_date=20260525&end_date=20260602&datum=MSL&station=8575512&time_zone=gmt&units=metric&interval=6&format=json",
+  "station": "8575512",
+  "station_name": "Annapolis, MD",
+  "product": "water_level",
+  "datum": "MSL",
+  "units": "metric",
+  "start_date": "2026-05-25",
+  "end_date": "2026-06-02",
+  "rows": 2160
+}

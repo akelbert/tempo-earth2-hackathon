@@ -22,6 +22,20 @@
       "notes": "Six TEMPO V04 scans from 14:06–19:06 UTC and same-day regional hourly AQS observations."
     },
     {
+      "id": "smoke-2026-07-16",
+      "title": "July 2026 Great Lakes and Northeast wildfire-smoke case",
+      "provider": "NASA, NOAA, and US EPA AirNow",
+      "themes": ["wildfire", "smoke", "air quality", "transport", "introductory"],
+      "access_mode": "workshop",
+      "workshop_root_env": "WORKSHOP_DATA_URI",
+      "workshop_relative_path": "tempo/cases/2026-07-16/northeast.zarr",
+      "format": "TEMPO Zarr plus context/cases/2026-07-16-smoke CSV and GeoJSON",
+      "source_url": "https://www.ospo.noaa.gov/products/land/hms.html",
+      "source_access": "Workshop extracts are read-only; the manifest records each NASA TEMPO, NOAA HMS, and AirNow source.",
+      "workshop_status": "real synchronized case",
+      "notes": "Six TEMPO V04 scans, NOAA HMS visible-smoke polygons/fire detections, and seven days of preliminary AirNow daily PM2.5. AirNow is not regulatory AQS data."
+    },
+    {
       "id": "tempo-no2",
       "title": "NASA TEMPO Level 3 NO2",
       "provider": "NASA ASDC",
@@ -83,8 +97,24 @@
       "format": "Cloud Optimized GeoTIFF",
       "source_url": "https://www.earthdata.nasa.gov/data/projects/hls",
       "source_access": "Discover through NASA CMR/STAC; Earthdata authentication may be required for asset access.",
-      "workshop_status": "connector-planned",
-      "notes": "Mirror selected tiles/time windows into GCS because NASA cloud-hosted assets can be region- and credential-bound."
+      "workshop_root_env": "WORKSHOP_CONTEXT_DATA_URI",
+      "workshop_relative_path": "hls",
+      "workshop_status": "real SERC cutout plus stager",
+      "notes": "A seven-band, 30 m HLS L30 cutout over the SERC region is staged for 4 June 2026. Mirror selected tiles/time windows into GCS because source assets can be region- and credential-bound."
+    },
+    {
+      "id": "noaa-hms",
+      "title": "NOAA Hazard Mapping System fire and smoke",
+      "provider": "NOAA NESDIS",
+      "themes": ["wildfire", "smoke", "air quality", "transport"],
+      "access_mode": "workshop-and-source",
+      "workshop_root_env": "WORKSHOP_CONTEXT_DATA_URI",
+      "workshop_relative_path": "cases/2026-07-16-smoke",
+      "format": "GeoJSON smoke polygons and CSV fire detections",
+      "source_url": "https://www.ospo.noaa.gov/products/land/hms.html",
+      "source_access": "Public daily archives; no attendee credential required.",
+      "workshop_status": "real July 16 case plus stager",
+      "notes": "HMS polygons are analyst interpretations of visible satellite smoke and are not surface concentration measurements."
     },
     {
       "id": "nasa-firms",
@@ -115,12 +145,14 @@
       "title": "NOAA CO-OPS tides and currents",
       "provider": "NOAA",
       "themes": ["coastal flooding", "sea level", "salinity", "marshes"],
-      "access_mode": "direct",
+      "access_mode": "workshop-and-source",
+      "workshop_root_env": "WORKSHOP_CONTEXT_DATA_URI",
+      "workshop_relative_path": "coops",
       "format": "Data API JSON",
       "source_url": "https://api.tidesandcurrents.noaa.gov/api/prod/",
       "source_access": "Public API, no account required.",
-      "workshop_status": "helper-live",
-      "notes": "Use station/date-bounded queries and identify units and datum explicitly."
+      "workshop_status": "real Annapolis case plus live helper",
+      "notes": "The staged case contains six-minute observed water levels and matching astronomical predictions for 25 May–2 June 2026. Annapolis is regional context, not a GCReW marsh measurement."
     },
     {
       "id": "epa-castnet",

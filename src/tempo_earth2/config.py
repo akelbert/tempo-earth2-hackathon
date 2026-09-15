@@ -27,7 +27,8 @@ from typing import Any
 #   * its 26 output variables include 10 m, 100 m and 850 hPa winds, which is
 #     exactly what a boundary-layer NO2 transport story needs.
 #
-# Swap it by setting WORKSHOP_MODEL; see tempo_earth2.forecast.SUPPORTED_MODELS.
+# Swap it by setting WORKSHOP_MODEL; see
+# tempo_earth2.forecast.SUPPORTED_PROGNOSTICS.
 DEFAULT_MODEL = "FCN"
 
 # TEMPO gridded NO2 tropospheric and stratospheric columns.
