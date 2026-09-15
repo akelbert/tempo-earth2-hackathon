@@ -90,7 +90,10 @@ resource "google_container_cluster" "primary" {
     }
 
     dynamic "maintenance_exclusion" {
-      for_each = var.environment == "event" ? [1] : []
+      # The rehearsed stack retains its stable "dev" resource names for this
+      # event. A live GPU reservation is therefore also an event-mode signal;
+      # changing the environment label would rename and replace the cluster.
+      for_each = var.environment == "event" || var.gpu_reservation_name != "" ? [1] : []
       content {
         exclusion_name = "tempo-earth2-event-freeze"
         start_time     = "2026-09-13T00:00:00Z"
@@ -103,9 +106,9 @@ resource "google_container_cluster" "primary" {
     }
   }
 
-  # Only protect the real event cluster from accidental `terraform destroy`;
-  # a dev/rehearsal stack should stay easy to tear down and rebuild.
-  deletion_protection = var.environment == "event"
+  # A live event reservation also protects this rehearsed-in-place deployment;
+  # its stable resource names still contain "dev" to avoid replacing the stack.
+  deletion_protection = var.environment == "event" || var.gpu_reservation_name != ""
 
   depends_on = [
     google_project_service.required["compute.googleapis.com"],

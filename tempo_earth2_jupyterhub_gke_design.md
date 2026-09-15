@@ -56,37 +56,31 @@ The following must be resolved no later than **August 21**:
 
 The August 21 gate succeeds only when a representative notebook runs end-to-end with real TEMPO data and the chosen model, not when Earth2Studio merely imports successfully.
 
-### Implemented model portfolio (September 9 update)
+### Implemented model portfolio (September 10 update)
 
 The scientific surface is broader than a single checkpoint, but the deployment
-contract remains precise. A machine-readable model catalog separates four
+contract remains precise. A machine-readable model catalog separates three
 tiers:
 
 - **guaranteed**: installed in the release image and validated on the exact L4
   attendee profile;
-- **candidate**: scientifically relevant, with a reproducible candidate-image
-  build, but unavailable to attendees until checkpoint terms and the L4
-  benchmark pass;
-- **precomputed**: selected outputs are useful for teaching and project design,
-  while interactive inference is not promised on 24 GB hardware; and
+- **reference**: scientifically relevant for project planning, but not installed
+  or promised on the 24 GB attendee hardware; and
 - **conditional**: promotion first requires a compatible upstream input or
   another explicit dependency decision.
 
-FCN and persistence are guaranteed. DLWP and Precipitation AFNO are the first
-candidates. The v2 precipitation diagnostic is excluded because Earth2Studio
-0.17 marks it as worse than v1 and slated for deprecation. On September 9, the
-exact candidate image passed one-step workstation tests on an 8 GB RTX 2080
-SUPER: DLWP peaked at 0.53 GB allocated GPU memory and the coupled
-FCN-to-Precipitation-AFNO path peaked at 1.36 GB. These results reduce technical
-risk but do not promote either model; the exact registry digest must still pass
-on an attendee-profile L4 and the checkpoint terms must be reviewed. Solar
-Radiation AFNO remains conditional because the guaranteed FCN path does not
-provide all of its required inputs. StormCast,
-DLESyM, Aurora, and FCN3 are precomputed/reference paths unless a separately
+FCN, DLWP, Precipitation AFNO, and persistence are guaranteed. The exact
+September 10 release image passed one-step tests on the attendee-profile NVIDIA
+L4 with no runtime checkpoint downloads: FCN peaked at 1.02 GB allocated GPU
+memory, DLWP at 0.53 GB, and the coupled FCN-to-Precipitation-AFNO path at
+1.36 GB. The v2 precipitation diagnostic is excluded because Earth2Studio 0.17
+marks it as worse than v1 and slated for deprecation. Solar Radiation AFNO
+remains conditional because FCN does not provide all of its required inputs.
+StormCast, DLESyM, Aurora, and FCN3 are reference-only unless a separately
 benchmarked high-memory service is approved. This catalog is not a CPU fallback
 and does not introduce a second JupyterHub profile.
 
-Candidate promotion requires the exact container to record model-load time,
+Model release validation requires the exact container to record model-load time,
 one-step inference time, peak GPU allocation, cache growth, output variables,
 and any failure on an L4. Merely installing an Earth2Studio extra or loading a
 checkpoint does not change its tier.

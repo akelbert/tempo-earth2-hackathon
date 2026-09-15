@@ -31,7 +31,10 @@ REQUIRED = {
 }
 
 DIGEST_REFERENCE = re.compile(r"^[a-z0-9][a-z0-9._/-]*@sha256:[0-9a-f]{64}$")
-USERNAME = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
+# JupyterHub and KubeSpawner safely escape email-form usernames for URLs and
+# Kubernetes object names. NativeAuthenticator also permits them at signup, so
+# the rendered allow-list must not reject an already-registered address.
+USERNAME = re.compile(r"^[a-z0-9][a-z0-9._@-]{0,63}$")
 DNS_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 GCP_RESOURCE_NAME = re.compile(r"^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 RELEASE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")

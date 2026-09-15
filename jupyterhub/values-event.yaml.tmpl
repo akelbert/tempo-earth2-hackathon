@@ -103,6 +103,14 @@ singleuser:
       operator: Equal
       value: jupyter-gpu
       effect: NoSchedule
+    # GKE automatically adds this taint to GPU nodes. User pods receive an
+    # equivalent toleration because they request nvidia.com/gpu, but the
+    # chart's continuous image-puller does not request a GPU and therefore
+    # needs it explicitly so the large event image is cached before spawning.
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
 
   cpu:
     guarantee: 2
@@ -149,7 +157,8 @@ singleuser:
 
 cull:
   enabled: true
-  timeout: 14400
+  # Reclaim scarce workshop GPUs after 90 minutes without Hub activity.
+  timeout: 5400
   every: 600
 
 ingress:

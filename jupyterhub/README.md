@@ -59,8 +59,8 @@ make -C .. deploy-hub
 `deploy-hub` templates chart 4.4.1 first and uses Helm's rollback-on-failure
 behavior.
 
-For candidate models, `render_benchmark_job.py` creates an ignored,
-digest-pinned one-GPU Job manifest. It only renders the manifest; an operator
+For release validation, `render_benchmark_job.py` creates an ignored,
+digest-pinned, uniquely named one-GPU Job manifest. It only renders the manifest; an operator
 must confirm spare GPU capacity before applying it so release testing cannot
 displace a demo or attendee server.
 

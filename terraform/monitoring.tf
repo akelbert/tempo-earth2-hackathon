@@ -1,5 +1,5 @@
-# Skipped entirely unless billing_account_id is set. The billing account
-# A billing-account administrator must either create the budget separately or
+# Skipped entirely unless billing_account_id is set. A billing-account
+# administrator must either create the budget separately or
 # grant the operator Billing Account Costs Manager before enabling it here.
 resource "google_billing_budget" "hackathon" {
   count = var.billing_account_id != "" ? 1 : 0
