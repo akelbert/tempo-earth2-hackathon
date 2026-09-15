@@ -299,8 +299,14 @@ def main() -> int:
         print("\nCatalog and bounded-source helpers")
         guaranteed = catalog.model_entries(("guaranteed",))
         check("catalog has a guaranteed FCN", any(item["id"] == "fcn" for item in guaranteed))
-        check("catalog does not promise DLWP live",
-              not next(item for item in catalog.model_entries() if item["id"] == "dlwp")["live_inference"])
+        live_models = {
+            item["id"]
+            for item in catalog.model_entries(("guaranteed",))
+            if item["live_inference"]
+        }
+        check("catalog promises all installed live models",
+              {"fcn", "dlwp", "precipitation-afno"} <= live_models,
+              str(sorted(live_models)))
         data = catalog.data_entries(("wildfire",))
         check("wildfire catalog spans multiple sources", len(data) >= 2, str([item["id"] for item in data]))
         usgs_url = sources.usgs_instantaneous_values_url(

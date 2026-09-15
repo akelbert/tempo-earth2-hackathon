@@ -25,6 +25,42 @@ fi
 
 mkdir -p "${target}"
 
+# The September release reordered the notebook path. Existing persistent homes
+# may contain the former filenames; leaving them in place would show users two
+# copies of every lesson. Preserve any such files (including attendee edits) in
+# the recovery area before seeding the newly numbered reference copies.
+old_names=(
+    01_tempo_earth2_intro.ipynb
+    02_tempo_column_vs_surface.ipynb
+    03_smoke_event.ipynb
+    04_wetland_response.ipynb
+    05_scale_matters.ipynb
+    06_bring_your_own_site.ipynb
+    07_earth2_model_tasting_menu.ipynb
+    08_tempo_earth2_toolkit_tour.ipynb
+)
+new_names=(
+    04_tempo_earth2_intro.ipynb
+    05_tempo_column_vs_surface.ipynb
+    06_smoke_event.ipynb
+    07_wetland_response.ipynb
+    08_scale_matters.ipynb
+    09_bring_your_own_site.ipynb
+    03_earth2_model_tasting_menu.ipynb
+    02_tempo_earth2_toolkit_tour.ipynb
+)
+migration_backup="${WORKSHOP_WORK_DIR}/.recovered/$(date -u +%Y%m%dT%H%M%SZ)-renumbering"
+
+for index in "${!old_names[@]}"; do
+    old_name="${old_names[index]}"
+    new_name="${new_names[index]}"
+    if [ -e "${target}/${old_name}" ] && [ -e "${WORKSHOP_REFERENCE_DIR}/${new_name}" ]; then
+        mkdir -p "${migration_backup}"
+        mv "${target}/${old_name}" "${migration_backup}/${old_name}"
+        echo "[seed] preserved superseded ${old_name} in ${migration_backup}" >&2
+    fi
+done
+
 # --ignore-existing is what makes this safe to run on every start: new notebooks
 # from a later release appear, edited notebooks are left alone.
 rsync -a --ignore-existing \

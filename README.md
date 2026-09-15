@@ -19,7 +19,13 @@ which heavier models are represented by precomputed outputs, and how to move
 from a small example to the broader workshop collection or an authoritative
 public archive.
 
-`01_tempo_earth2_intro.ipynb` puts a real TEMPO retrieval and a real Earth-2
+`02_tempo_earth2_toolkit_tour.ipynb` explains the workshop-specific helper
+modules, then uses Earth2Studio's native model, data-source, IO-backend, and
+workflow interfaces for a minimal FCN run. `03_earth2_model_tasting_menu.ipynb`
+uses the same native interface to compare FCN and DLWP and couple FCN to
+Precipitation AFNO.
+
+`04_tempo_earth2_intro.ipynb` begins the science path by putting a real TEMPO retrieval and a real Earth-2
 forecast into the same array and produces a number:
 
 1. Load a staged TEMPO tropospheric NO₂ scan and screen it for quality and
@@ -40,12 +46,24 @@ wind level stands in for a deep column, the wind is 6-hourly and 25 km against
 an hourly 2 km observation, and there is no chemistry. Those are the hackathon,
 not defects to hide.
 
-`02_tempo_column_vs_surface.ipynb` uses a separately staged, fully real matched
-case: six TEMPO V04 scans from 31 May 2026 and same-day EPA AQS observations.
-It intentionally does not invent meteorology when a real compatible source is
-not present. The remaining short notebooks are possibility samplers; generated
-fixtures keep them executable in CI while the corresponding real collections
-are promoted through the catalog.
+`05_tempo_column_vs_surface.ipynb` uses a separately staged, fully real matched
+case: six TEMPO V04 scans from 31 May 2026 and same-day EPA AQS observations,
+then runs FCN and tests a baseline augmented with its live wind and temperature.
+`06_smoke_event.ipynb` combines a documented July 2026 wildfire-smoke event
+from NOAA HMS and AirNow with six real TEMPO scans and live FCN transport winds.
+`07_wetland_response.ipynb` uses real NOAA Annapolis water levels and
+astronomical tide predictions plus live FCN-to-Precipitation-AFNO output as
+regional Chesapeake context. `08_scale_matters.ipynb` replaces the former
+HLS-shaped fixture with a real seven-band, 30 m NASA HLS cutout over SERC and
+compares its scale with live Earth-2 precipitation.
+`09_bring_your_own_site.ipynb` remains a clearly labeled synthetic template
+until an attendee or investigator supplies an approved site dataset.
+
+Notebooks 03, 07, and 08 run the installed DLWP and Precipitation AFNO paths
+directly through Earth2Studio. FCN, DLWP, and the coupled
+FCN-to-Precipitation-AFNO workflow passed the exact-image L4 release gate with
+zero checkpoint downloads. They do not silently fall back to CPU or synthetic
+model output.
 
 ### Capability tiers
 
@@ -54,21 +72,16 @@ The machine-readable catalogs live beside the Python package as
 meaning:
 
 - `guaranteed`: present in the released image and validated on the attendee L4;
-- `candidate`: scientifically useful, but not promoted until the exact image
-  passes the target-GPU benchmark and checkpoint terms are reviewed;
-- `precomputed`: useful outputs can be supplied, but live inference is not
-  promised on a 24 GB L4; and
+- `reference`: visible for project planning, but not installed in the workshop
+  image or promised on a 24 GB L4; and
 - `conditional`: an upstream variable, credential, or compatibility issue must
   be resolved first.
 
-FCN and persistence are currently guaranteed. DLWP and Precipitation AFNO
-are the first candidates. StormCast, DLESyM, Aurora, and FCN3 remain visible to
-attendees as project directions without pretending they fit the current pod.
-Both candidates pass a one-step test in the exact candidate image on the local
-8 GB RTX 2080 SUPER. DLWP peaked at 0.53 GB allocated GPU memory; the coupled
-FCN-to-Precipitation-AFNO workflow peaked at 1.36 GB. These are encouraging
-workstation results, not substitutes for the required L4 test or checkpoint
-terms review, so neither candidate is advertised as live yet.
+FCN, DLWP, Precipitation AFNO, and persistence are guaranteed. On the exact
+deployed image, DLWP peaked at 0.53 GB allocated L4 memory and the coupled
+FCN-to-Precipitation-AFNO workflow peaked at 1.36 GB; neither downloaded a
+checkpoint at runtime. StormCast, DLESyM, Aurora, and FCN3 remain reference-only
+project directions and are not installed in the current image.
 
 ---
 
@@ -99,13 +112,13 @@ notebooks/
 src/tempo_earth2/
   config.py               paths, env vars, environment reporting
   tempo.py                TEMPO loading, normalization, quality screening
-  forecast.py             Earth2Studio wrapper, grid handling, regridding
+  forecast.py             forecast convenience plus output/time/grid adapters
   advect.py               semi-Lagrangian advection and skill scoring
   plots.py                map and diagnostic plotting
   context.py              small CSV/Zarr context-data loaders and baselines
   catalog.py              query model/data capability tiers and resolved URIs
   data_catalog.json       real-source access and staging catalog
-  model_catalog.json      validated/candidate/precomputed model catalog
+  model_catalog.json      installed/reference model availability catalog
   sources.py              bounded USGS and NOAA public-API helpers
 
 scripts/
@@ -115,7 +128,10 @@ scripts/
   make_demo_data.py       synthetic TEMPO + forecast, for laptop testing
   make_teaching_data.py   deterministic context fixtures for all starter notebooks
   stage_aqs.py            EPA AQS hourly NO2/O3/PM2.5 teaching subset
-  benchmark_models.py     target-L4 candidate promotion report
+  stage_coops.py          NOAA water-level/prediction case with provenance
+  stage_smoke_case.py     NOAA HMS + preliminary AirNow event extract
+  stage_hls.py            authenticated HLS COGs → bounded NetCDF cutout
+  benchmark_models.py     exact-image target-L4 release validation report
   smoke_test.py           synthetic correctness check, no GPU needed
   test_notebook.py        execute a shipped .ipynb headlessly and assert on it
   _synthetic.py           TEMPO and forecast fixtures with a known answer
@@ -159,7 +175,11 @@ so nobody has to guess a date.
 make teaching-data
 make stage-aqs STAGE_DATE=2026-06-15
 make stage-aqs-explore AQS_START=2025-09-01 AQS_END=2026-06-01
+make stage-coops-case
+make stage-smoke-case
+make stage-hls-case
 make publish-data BUCKET=gs://your-workshop-bucket
+make sync-real-case  # fetch the published May 31 TEMPO/AQS case for local use
 ```
 
 `make teaching-data` builds small, deterministic context fixtures aligned with
@@ -172,9 +192,12 @@ observations when that date has reached the annual bulk archive. AQS publication
 lags real time, so a recent TEMPO case can legitimately have no matching rows.
 The staging command fails instead of silently substituting a different date.
 
-The contextual collection lives below `WORKSHOP_CONTEXT_DATA_URI`: air-quality
-tables under `aqs/` and compact teaching inputs under `demo/`. Publishing syncs
-both `data/tempo` and `data/context` into their corresponding bucket prefixes.
+The contextual collection lives below `WORKSHOP_CONTEXT_DATA_URI`: validated
+air-quality tables under `aqs/`, the real smoke event under `cases/`, the real
+HLS cutout under `hls/`, coastal observations under `coops/`, and synthetic CI
+fixtures under `demo/`. Publishing syncs both `data/tempo` and `data/context`
+into their corresponding bucket prefixes.
+
 For broad AQS exploration, `stage-aqs-explore` writes monthly compressed
 partitions; load one with `tempo_earth2.context.read_aqs_month("2026-05")`.
 
@@ -183,6 +206,13 @@ case under `tempo/cases/2026-05-31/northeast.zarr`, its exact AQS table under
 `context/aqs/2026-05-31.csv`, and monthly Northeast AQS partitions from
 September 2025 through the currently published portion of June 2026. The
 original `tempo/northeast.zarr` object set was not replaced.
+
+The July smoke case uses preliminary AirNow values because the regulatory AQS
+annual bulk archive does not yet cover that event. Its manifest records that
+limitation alongside the NOAA HMS and AirNow URLs. The HLS stager downloads
+authenticated source COGs at preparation time, crops without spatial
+resampling, applies the documented reflectance scale, and writes a small
+analysis-ready NetCDF; attendees do not receive operator credentials.
 
 Large archives are not copied wholesale. NOAA GFS/HRRR and bounded USGS/NOAA
 APIs are accessed at source; NASA assets that require Earthdata credentials or
@@ -193,7 +223,8 @@ ForestGEO/investigator data require an explicit owner handoff and terms review.
 
 ```bash
 make build            # local, needs an amd64 Linux host with a GPU
-make build-candidate  # non-deployable FCN/DLWP/precipitation validation image
+make build-candidate  # FCN/DLWP/precipitation release-candidate image
+make run-candidate    # local JupyterLab with those candidate extras
 make cloud-build-candidate RELEASE=rc1  # build/push it without changing Hub
 make benchmark-candidates  # current GPU; L4 rerun required for promotion
 make render-l4-benchmark CANDIDATE_IMAGE_DIGEST='registry/image@sha256:...'
@@ -234,13 +265,20 @@ image serves local development and the cluster.
 | --- | --- |
 | `WORKSHOP_DATA_URI` | Root of the canonical workshop bucket; catalogs resolve dated collections below it |
 | `TEMPO_DATA_URI` | Staged TEMPO Zarr store or directory |
-| `WORKSHOP_CONTEXT_DATA_URI` | Root containing staged AQS and teaching datasets |
+| `WORKSHOP_CONTEXT_DATA_URI` | Root containing staged AQS, HMS/AirNow, HLS, coastal, and teaching datasets |
 | `EARTH2STUDIO_MODEL_CACHE` | Shared checkpoint cache, **outside** the user home |
 | `EARTH2STUDIO_DATA_CACHE` | Writable data-source cache, inside the user home |
 | `WORKSHOP_MODEL` | Default Earth2Studio model (`FCN`) |
 | `WORKSHOP_RELEASE` | Release identifier; also gates notebook seeding |
 | `WORKSHOP_PRECOMPUTED` | Optional reference forecasts for demonstrations, tests, and rapid iteration; not an availability fallback |
 | `WORKSHOP_WORK_DIR` | Attendee working directory (`~/work`) |
+
+Set a new `WORKSHOP_RELEASE` whenever a deployed image changes the starter
+notebooks. Seeding is intentionally skipped when a user's persistent home
+already has the same release stamp. For the 00–09 renumbering, the seeder moves
+old-numbered notebooks—including attendee edits—into
+`~/work/.recovered/<timestamp>-renumbering/` before adding clean, newly numbered
+copies. It never deletes or overwrites attendee work.
 
 The model cache is the one that matters most. Earth2Studio defaults it to
 `~/.cache/earth2studio`, which on this deployment is a per-user persistent disk

@@ -1,7 +1,8 @@
 # %% [markdown]
 # # Where does the NO₂ go? TEMPO observations meet an Earth-2 forecast
 #
-# **Run `00_environment_check.ipynb` first.** This notebook assumes it passed.
+# **Run notebooks 00–03 first.** This notebook begins the science path and
+# assumes the environment check passed.
 #
 # ---
 #
@@ -67,7 +68,7 @@ MAX_QA_FLAG = 0           # 0 keeps only normal-quality retrievals
 MAX_CLOUD_FRACTION = 0.2  # raise towards 1.0 to keep more (cloudier) pixels
 
 # --- The forecast -------------------------------------------------------------
-MODEL_NAME = "FCN"        # see tempo_earth2.forecast.SUPPORTED_MODELS
+MODEL_NAME = "FCN"        # see tempo_earth2.forecast.SUPPORTED_PROGNOSTICS
 WIND_LEVEL = "10m"        # "10m" | "100m" | "850"
 
 # --- Optional teaching/reference data ----------------------------------------
@@ -220,6 +221,11 @@ print(f"Forecast steps:    {nsteps}  ({nsteps * 6} hours)")
 # We ask for only the eight wind and near-surface variables we need. The model
 # computes all 26 internally either way, but writing only what we use keeps the
 # output store about ten times smaller.
+#
+# This science notebook uses `tempo_earth2.forecast.run_forecast` to keep the
+# transport narrative readable. Notebook 02 shows the equivalent native
+# Earth2Studio model/data/IO/run calls; the wrapper does not define a different
+# model API.
 
 # %%
 store = config.outputs / f"{MODEL_NAME.lower()}_{init_time:%Y%m%dT%H%M}Z.zarr"
@@ -654,7 +660,7 @@ print(f"Wrote {result_path}")
 #
 # ### Getting unstuck
 #
-# * `restore-workshop-notebooks 01_tempo_earth2_intro.ipynb` — clean copy back,
+# * `restore-workshop-notebooks 04_tempo_earth2_intro.ipynb` — clean copy back,
 #   your version moved aside, not deleted.
 # * `reset-user-environment` — undo a `pip install` that broke imports.
 # * `00_environment_check.ipynb` — run it again and paste the output into your

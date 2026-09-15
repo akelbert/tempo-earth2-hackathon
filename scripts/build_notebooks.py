@@ -38,9 +38,9 @@ def parse_percent(text: str, stem: str = "cell") -> list[dict]:
 
         # %% tags=["optional"]
 
-    The workshop uses one tag, ``optional``: cells that enrich the notebook but
-    that nothing downstream depends on. ``test_notebook.py --skip-optional``
-    excludes them from automated runs.
+    The workshop uses ``optional`` for frontend-only enrichment and
+    ``requires-gpu`` for live model cells. The headless CPU test excludes both;
+    release engineering executes the latter in the candidate GPU image.
     """
     cells: list[dict] = []
     kind = "code"

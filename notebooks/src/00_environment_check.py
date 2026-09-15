@@ -193,7 +193,7 @@ _redraw({"new": slider.value})
 #
 # | Symptom | Command (run in a terminal) |
 # | --- | --- |
-# | A notebook is edited beyond repair | `restore-workshop-notebooks 01_tempo_earth2_intro.ipynb` |
+# | A notebook is edited beyond repair | `restore-workshop-notebooks 04_tempo_earth2_intro.ipynb` |
 # | Imports or widgets broke after a `pip install` | `reset-user-environment --apply` |
 #
 # Run either with no arguments first to see what it would do.
@@ -212,4 +212,6 @@ for command in ("restore-workshop-notebooks", "reset-user-environment"):
 # ---
 #
 # If everything above looks right, open
-# **`01_data_and_model_catalog.ipynb`**, then **`01_tempo_earth2_intro.ipynb`**.
+# **`01_data_and_model_catalog.ipynb`**, then
+# **`02_tempo_earth2_toolkit_tour.ipynb`**. Notebook 03 surveys the available
+# model workflows; notebook 04 begins the science path.

@@ -21,6 +21,7 @@ IMAGE        ?= earth2-lab
 RELEASE      ?= dev
 CANDIDATE_RELEASE ?= model-candidate-$(RELEASE)
 CANDIDATE_IMAGE_DIGEST ?=
+BENCHMARK_JOB_NAME ?= earth2-model-benchmark-$(RELEASE)
 REGISTRY     ?= $(REGION)-docker.pkg.dev/$(PROJECT)/$(REPOSITORY)
 TAG          ?= $(REGISTRY)/$(IMAGE):$(RELEASE)
 LOCAL_TAG    ?= $(IMAGE):$(RELEASE)
@@ -34,6 +35,7 @@ CHART_VERSION ?= 4.4.1
 HELM_VALUES   ?= jupyterhub/.generated/values-event.yaml
 BUILD_SERVICE_ACCOUNT ?= $(shell terraform -chdir=terraform output -raw cloud_build_service_account 2>/dev/null)
 BUILD_SOURCE_BUCKET    ?= $(shell terraform -chdir=terraform output -raw cloud_build_source_bucket 2>/dev/null)
+WORKSHOP_BUCKET        ?= $(shell terraform -chdir=terraform output -raw tempo_data_bucket 2>/dev/null)
 
 PYTHON       ?= .venv/bin/python
 E2S_VERSION  ?= 0.17.0
@@ -58,12 +60,14 @@ check: ## Notebooks current, lint clean, analysis correct (no Docker, no GPU)
 	$(PYTHON) scripts/smoke_test.py
 	$(PYTHON) scripts/test_notebook.py --notebook notebooks/00_environment_check.ipynb
 	$(PYTHON) scripts/test_notebook.py --notebook notebooks/01_data_and_model_catalog.ipynb
-	$(PYTHON) scripts/test_notebook.py --notebook notebooks/01_tempo_earth2_intro.ipynb
-	$(PYTHON) scripts/test_notebook.py --notebook notebooks/02_tempo_column_vs_surface.ipynb
-	$(PYTHON) scripts/test_notebook.py --notebook notebooks/03_smoke_event.ipynb
-	$(PYTHON) scripts/test_notebook.py --notebook notebooks/04_wetland_response.ipynb
-	$(PYTHON) scripts/test_notebook.py --notebook notebooks/05_scale_matters.ipynb
-	$(PYTHON) scripts/test_notebook.py --notebook notebooks/06_bring_your_own_site.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/02_tempo_earth2_toolkit_tour.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/03_earth2_model_tasting_menu.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/04_tempo_earth2_intro.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/05_tempo_column_vs_surface.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/06_smoke_event.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/07_wetland_response.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/08_scale_matters.ipynb
+	$(PYTHON) scripts/test_notebook.py --notebook notebooks/09_bring_your_own_site.ipynb
 
 .PHONY: venv
 venv: ## Local development environment
@@ -88,18 +92,20 @@ build-baked: notebooks ## Build with the model checkpoint baked into the image
 	  --platform $(PLATFORM) \
 	  --build-arg EARTH2STUDIO_VERSION=$(E2S_VERSION) \
 	  --build-arg PREFETCH_MODEL=true \
-	  --build-arg PREFETCH_MODEL_NAME=FCN \
+	  --build-arg PREFETCH_MODELS=FCN \
 	  -f docker/Dockerfile \
 	  -t $(LOCAL_TAG) \
 	  .
 
 .PHONY: build-candidate
-build-candidate: notebooks ## Build a non-deployable image for FCN/DLWP/precipitation validation
+build-candidate: notebooks ## Build an FCN/DLWP/precipitation release candidate
 	docker build \
 	  --platform $(PLATFORM) \
 	  --build-arg EARTH2STUDIO_VERSION=$(E2S_VERSION) \
 	  --build-arg EARTH2STUDIO_EXTRAS=fcn,dlwp,precip-afno,data,utils \
 	  --build-arg 'EARTH2STUDIO_IMPORT_CHECK=from earth2studio.models.px import FCN, DLWP; from earth2studio.models.dx import PrecipitationAFNO' \
+	  --build-arg PREFETCH_MODEL=true \
+	  --build-arg PREFETCH_MODELS=FCN,DLWP,PrecipitationAFNO \
 	  -f docker/Dockerfile \
 	  -t $(LOCAL_TAG)-candidate \
 	  .
@@ -128,7 +134,8 @@ benchmark-candidates: ## Benchmark candidate prognostics on the current GPU
 render-l4-benchmark: ## Render (but do not submit) a digest-pinned GKE benchmark Job
 	@test -n "$(CANDIDATE_IMAGE_DIGEST)" || { echo "Set CANDIDATE_IMAGE_DIGEST to image@sha256:..."; exit 1; }
 	$(PYTHON) jupyterhub/render_benchmark_job.py \
-	  --image "$(CANDIDATE_IMAGE_DIGEST)"
+	  --image "$(CANDIDATE_IMAGE_DIGEST)" \
+	  --name "$(BENCHMARK_JOB_NAME)"
 
 .PHONY: cloud-build
 cloud-build: notebooks ## Build on Cloud Build and push to Artifact Registry
@@ -144,7 +151,7 @@ cloud-build: notebooks ## Build on Cloud Build and push to Artifact Registry
 	  .
 
 .PHONY: cloud-build-candidate
-cloud-build-candidate: notebooks ## Build/push candidate extras without changing JupyterHub
+cloud-build-candidate: notebooks ## Build/push a release candidate without changing JupyterHub
 	@test -n "$(PROJECT)" || { echo "Set PROJECT to the target Google Cloud project"; exit 1; }
 	@test -n "$(BUILD_SERVICE_ACCOUNT)" || { echo "Set BUILD_SERVICE_ACCOUNT (or apply Terraform first)"; exit 1; }
 	@test -n "$(BUILD_SOURCE_BUCKET)" || { echo "Set BUILD_SOURCE_BUCKET (or apply Terraform first)"; exit 1; }
@@ -211,6 +218,22 @@ run: ## Run the image locally with a GPU
 	  $(LOCAL_TAG) \
 	  jupyter lab --ip=0.0.0.0 --no-browser --ServerApp.token=''
 
+.PHONY: run-candidate
+run-candidate: ## Test current notebooks/code in the existing release-candidate image
+	mkdir -p $(PWD)/benchmark-results/model-cache
+	docker run --rm -it --gpus all \
+	  -p 127.0.0.1:8888:8888 \
+	  -v $(PWD)/data:/home/jovyan/work/data:ro \
+	  -v $(PWD)/notebooks:/opt/earth2/notebooks:ro \
+	  -v $(PWD)/src/tempo_earth2:/opt/earth2/lib/tempo_earth2:ro \
+	  -v $(PWD)/benchmark-results/model-cache:/opt/earth2/cache/models \
+	  -e WORKSHOP_DATA_URI=/home/jovyan/work/data \
+	  -e TEMPO_DATA_URI=/home/jovyan/work/data/tempo/northeast.zarr \
+	  -e WORKSHOP_CONTEXT_DATA_URI=/home/jovyan/work/data/context \
+	  -e WORKSHOP_RELEASE=$(RELEASE)-candidate-working-tree \
+	  $(LOCAL_TAG)-candidate \
+	  jupyter lab --ip=0.0.0.0 --no-browser --ServerApp.token=''
+
 .PHONY: verify-image
 verify-image: ## Run the environment-check notebook inside the image
 	docker run --rm --gpus all $(LOCAL_TAG) \
@@ -271,11 +294,53 @@ stage-aqs-explore: ## Stage a broader, compressed EPA AQS regional collection
 	  --region $(STAGE_REGION) \
 	  --partition-by-month --output data/context/aqs/by-month
 
+.PHONY: stage-coops-case
+stage-coops-case: ## Stage real Annapolis water levels and tide predictions
+	$(PYTHON) scripts/stage_coops.py \
+	  --station 8575512 --station-name 'Annapolis, MD' \
+	  --start-date 2026-05-25 --end-date 2026-06-02 \
+	  --product water_level \
+	  --output data/context/coops/annapolis-water-level-2026-05-25-2026-06-02.csv
+	$(PYTHON) scripts/stage_coops.py \
+	  --station 8575512 --station-name 'Annapolis, MD' \
+	  --start-date 2026-05-25 --end-date 2026-06-02 \
+	  --product predictions \
+	  --output data/context/coops/annapolis-tide-predictions-2026-05-25-2026-06-02.csv
+
+.PHONY: stage-smoke-case
+stage-smoke-case: ## Stage the real July 2026 NOAA HMS/AirNow smoke case
+	$(PYTHON) scripts/stage_tempo.py \
+	  --date 2026-07-16 --region northeast --scans 6 \
+	  --output data/tempo/cases/2026-07-16/northeast.zarr
+	$(PYTHON) scripts/stage_smoke_case.py \
+	  --event-date 2026-07-16 --start-date 2026-07-14 --end-date 2026-07-20 \
+	  --bbox -100 35 -65 56 \
+	  --output data/context/cases/2026-07-16-smoke
+
+.PHONY: stage-hls-case
+stage-hls-case: ## Stage the real June 4 SERC-area NASA HLS cutout
+	$(PYTHON) scripts/stage_hls.py \
+	  --granule-id HLS.L30.T18SUJ.2026155T154516.v2.0 \
+	  --bbox -76.62 38.85 -76.50 38.95 \
+	  --output data/context/hls/serc-2026-06-04.nc
+
 .PHONY: publish-data
 publish-data: ## Copy staged TEMPO and context data to the workshop bucket
 	@test -n "$(BUCKET)" || { echo "Set BUCKET=gs://..."; exit 1; }
 	gcloud storage rsync -r data/tempo $(BUCKET)/tempo
 	gcloud storage rsync -r data/context $(BUCKET)/context
+
+.PHONY: sync-real-case
+sync-real-case: ## Download the real May 31 TEMPO/AQS case for local notebooks
+	@test -n "$(WORKSHOP_BUCKET)" || { echo "Set WORKSHOP_BUCKET to the workshop bucket name"; exit 1; }
+	mkdir -p data/tempo/cases/2026-05-31 data/context/aqs
+	gcloud storage rsync -r \
+	  gs://$(WORKSHOP_BUCKET)/tempo/cases/2026-05-31 \
+	  data/tempo/cases/2026-05-31
+	gcloud storage cp \
+	  gs://$(WORKSHOP_BUCKET)/context/aqs/2026-05-31.csv \
+	  gs://$(WORKSHOP_BUCKET)/context/aqs/2026-05-31.manifest.json \
+	  data/context/aqs/
 
 .PHONY: clean
 clean: ## Remove build artefacts (never touches data/)

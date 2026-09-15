@@ -10,9 +10,9 @@
 # 3. authoritative public archives/APIs that stay at their source.
 #
 # The model catalog makes a similarly important distinction: **guaranteed**
-# models have passed the event image's L4 test, **candidate** models still have
-# a release gate, and **precomputed** models are represented by selected outputs
-# because their normal hardware profile is larger than one attendee GPU.
+# models are installed and passed the event image's L4 test, **reference**
+# models are project directions that are not installed, and **conditional**
+# models first need an input or compatibility decision.
 
 # %%
 from tempo_earth2 import catalog
@@ -108,16 +108,14 @@ for item in matches:
 # %% [markdown]
 # ## What “not limited to FCN” means here
 #
-# FCN is the default because it is the model actually validated on the event
-# L4. That is a reliability statement, not a scientific recommendation that
-# every project use FCN. The catalog exposes candidate diagnostics and model
-# families relevant to precipitation, storms, seasonal prediction, and
-# foundation-model comparisons. Their `tier` tells you which of these paths is
-# supported:
+# FCN is the default, but it is not the only live model. FCN and DLWP are
+# installed prognostics, and PrecipitationAFNO is an installed diagnostic that
+# consumes FCN output. The catalog also exposes model families relevant to
+# storms, seasonal prediction, and foundation-model comparisons. Their `tier`
+# tells you which paths are supported:
 #
 # - run live in your server (`guaranteed`);
-# - work with the organizers to validate a candidate image (`candidate`);
-# - analyze supplied outputs or use separate hardware (`precomputed`); or
+# - treat as a project direction requiring separate hardware (`reference`); or
 # - first resolve an input-compatibility issue (`conditional`).
 #
 # This avoids two bad surprises: discovering during the workshop that a 40–80
@@ -128,3 +126,8 @@ for item in matches:
 for item in catalog.model_entries():
     uses = ", ".join(item["science_uses"])
     print(f"{item['name']:<28} {item['tier']:<12} {uses}")
+
+# %% [markdown]
+# **Next reference:** open `02_tempo_earth2_toolkit_tour.ipynb` for a compact
+# guide to the helper functions used throughout these notebooks and the basic
+# live-model interfaces. Notebook 03 compares all installed live models.

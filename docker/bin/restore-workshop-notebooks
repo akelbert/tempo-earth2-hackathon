@@ -2,7 +2,7 @@
 # Restore a clean copy of one or all workshop notebooks.
 #
 #   restore-workshop-notebooks                    # list what can be restored
-#   restore-workshop-notebooks 01_tempo_earth2_intro.ipynb
+#   restore-workshop-notebooks 04_tempo_earth2_intro.ipynb
 #   restore-workshop-notebooks --all
 #
 # The attendee's current version is moved aside with a timestamp, never

@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-"""Execute the shipped introductory notebook against synthetic data.
+"""Execute a shipped notebook against compact test data.
 
 This runs the actual ``.ipynb`` that goes into the image, cell by cell, using
-the optional reference-forecast path. It needs no GPU, no Earth2Studio, and no
-Earthdata login, so it can run in CI and on a laptop. This is test coverage,
-not a supported attendee deployment mode.
+synthetic data with known answers for algorithm tests and the committed real
+context extracts where notebooks require them. Live-GPU cells are excluded. It
+needs no GPU, Earth2Studio, or Earthdata login, so it can run in CI and on a
+laptop. This is test coverage, not a supported attendee deployment mode.
 
 What it cannot check is the Earth2Studio inference path itself. What it does
 check is everything else: that the notebook's cells run in order, that the
@@ -32,7 +33,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import _synthetic
 import make_teaching_data
 
-DEFAULT_NOTEBOOK = ROOT / "notebooks" / "01_tempo_earth2_intro.ipynb"
+DEFAULT_NOTEBOOK = ROOT / "notebooks" / "04_tempo_earth2_intro.ipynb"
 
 # Wind and timing chosen so the notebook's own defaults (SCAN_INDEX=1,
 # SCAN_GAP=1) land on a scan pair one hour apart, initialized at 12Z.
@@ -47,6 +48,11 @@ def prepare(workspace: Path) -> dict[str, str]:
     precomputed = workspace / "precomputed"
     store = _synthetic.write_precomputed(precomputed, "FCN", u_ms=U_MS, v_ms=V_MS)
     context = make_teaching_data.build(tempo, workspace / "context")
+    # Real notebook-sized context extracts are small enough to exercise in CPU
+    # CI. The large TEMPO event Zarrs remain outside Git and use the synthetic
+    # TEMPO fixture in this structural test.
+    real_context = ROOT / "data" / "context"
+    shutil.copytree(real_context, context, dirs_exist_ok=True)
 
     print(f"  TEMPO store       {tempo}")
     print(f"  precomputed       {store}")
@@ -93,7 +99,7 @@ def patch_settings(notebook: dict) -> int | None:
 
 
 def drop_optional(notebook: dict) -> int:
-    """Remove cells tagged ``optional`` before execution.
+    """Remove frontend-only and live-GPU cells before CPU execution.
 
     Those cells build ipywidgets and Glue viewers. Both need a live frontend to
     mean anything, and the Glue cell reliably stalls a headless nbclient kernel
@@ -102,10 +108,11 @@ def drop_optional(notebook: dict) -> int:
     ``--with-optional`` to reproduce the stall.
     """
     before = len(notebook["cells"])
+    excluded = {"optional", "requires-gpu"}
     notebook["cells"] = [
         cell
         for cell in notebook["cells"]
-        if "optional" not in cell.get("metadata", {}).get("tags", [])
+        if excluded.isdisjoint(cell.get("metadata", {}).get("tags", []))
     ]
     return before - len(notebook["cells"])
 
@@ -153,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--with-optional",
         action="store_true",
-        help="also execute cells tagged 'optional' (widgets, Glue)",
+        help="also execute frontend-only and live-GPU cells",
     )
     args = parser.parse_args(argv)
 
@@ -191,8 +198,8 @@ def main(argv: list[str] | None = None) -> int:
         if not args.with_optional:
             skipped = drop_optional(notebook)
             print(
-                f"  skipped {skipped} cell(s) tagged 'optional' "
-                "(widgets and Glue; --with-optional to include them)"
+                f"  skipped {skipped} optional/live-GPU cell(s) "
+                "(--with-optional to include them)"
             )
         print()
 

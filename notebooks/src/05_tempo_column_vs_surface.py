@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from tempo_earth2 import catalog, context
+from tempo_earth2 import catalog, context, forecast
 from tempo_earth2.config import WorkshopConfig
 from tempo_earth2.tempo import apply_quality_mask, open_tempo_source
 
@@ -131,14 +131,68 @@ plt.legend()
 plt.grid(alpha=0.25)
 
 # %% [markdown]
-# ## Bring Earth-2 weather into the next experiment
+# ## Add live Earth-2 weather
 #
-# The next scientifically meaningful version should collocate boundary-layer
-# and transport variables from a real source: FCN winds for a forecast
-# experiment, or HRRR/reanalysis for a diagnostic comparison. Do not invent a
-# boundary-layer height merely to make this introductory plot look complete.
+# Now run FCN from the latest 6-hour initialization preceding the TEMPO scans.
+# We collocate its near-surface wind and temperature to the monitors and ask
+# whether those weather variables improve the transparent baseline. This is a
+# real forecast initialized by NOAA GFS—not a synthetic meteorology fixture.
 #
-# Try holding out one station, using a small satellite pixel average, adding
-# FCN wind speed from notebook 01, or comparing FCN with HRRR. If performance
-# collapses when a station is held out, the model learned station identity—not
-# a general column-to-surface relationship.
+# The comparison remains in-sample and is not an exposure model. A serious
+# experiment should hold out stations and compare FCN with observations or
+# reanalysis rather than treating a forecast as truth.
+#
+# For compactness this science notebook uses the workshop forecast convenience
+# function. Notebook 02 shows the native Earth2Studio call it delegates to.
+
+# %% tags=["requires-gpu"]
+target_time = pd.Timestamp(tempo.time.values[len(tempo.time) // 2]).tz_localize("UTC").floor("s")
+init_time = forecast.nearest_init_time(target_time.to_pydatetime())
+earth2 = forecast.run_forecast(
+    init_time,
+    nsteps=2,
+    model_name="FCN",
+    variables=("u10m", "v10m", "t2m"),
+    verbose=False,
+)
+weather = forecast.select_valid_time(earth2.dataset, target_time.to_pydatetime())
+with_weather = context.nearest_grid_values(
+    weather, joined, ("u10m", "v10m", "t2m")
+)
+with_weather["wind10m_ms"] = np.hypot(with_weather.u10m, with_weather.v10m)
+with_weather["t2m_c"] = with_weather.t2m - 273.15
+with_weather["column_time_weather"], score_weather = context.linear_baseline(
+    with_weather,
+    ["tempo_no2_1e15", "hour_sin", "hour_cos", "wind10m_ms", "t2m_c"],
+    "value",
+)
+
+print(f"Earth2Studio model:       {earth2.model_name} on {earth2.device}")
+print(f"GFS initialization:       {earth2.init_time} UTC")
+print(f"Selected forecast valid:  {weather.attrs['valid_time']}")
+print("Column + UTC time:       ", score_time)
+print("Column + time + FCN:     ", score_weather)
+
+plt.figure(figsize=(6, 5))
+plt.scatter(
+    with_weather.value,
+    with_weather.column_time_weather,
+    c=with_weather.wind10m_ms,
+    cmap="viridis",
+)
+plt.plot(limit, limit, "k--", linewidth=1)
+plt.xlim(limit)
+plt.ylim(limit)
+plt.xlabel("observed surface NO$_2$ (ppb)")
+plt.ylabel("baseline with FCN weather (ppb)")
+plt.title("Real TEMPO + AQS + Earth-2 FCN")
+plt.colorbar(label="FCN 10 m wind speed (m s$^{-1}$)")
+plt.grid(alpha=0.25)
+
+# %% [markdown]
+# ## Try one defensible extension
+#
+# Hold out one station, average several satellite pixels around each monitor,
+# or compare FCN wind with HRRR/reanalysis. If performance collapses on the
+# held-out station, the model learned the sampled sites—not a transferable
+# column-to-surface relationship.
