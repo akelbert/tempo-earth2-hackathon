@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Render the one-shot L4 candidate benchmark Job from validated inputs."""
+"""Render a uniquely named, one-shot L4 release benchmark Job."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image", required=True, help="fully qualified image@sha256 digest")
     parser.add_argument("--namespace", default="jupyterhub")
     parser.add_argument("--service-account", default="earth2-attendee")
+    parser.add_argument("--name", default="earth2-model-benchmark")
     parser.add_argument(
         "--template",
         type=Path,
@@ -45,6 +46,7 @@ def main() -> int:
 
     rendered = Template(args.template.read_text()).substitute(
         CANDIDATE_IMAGE_DIGEST=args.image,
+        JOB_NAME=_dns_label(args.name, "job name"),
         NAMESPACE=_dns_label(args.namespace, "namespace"),
         KUBERNETES_SERVICE_ACCOUNT=_dns_label(
             args.service_account, "service account"

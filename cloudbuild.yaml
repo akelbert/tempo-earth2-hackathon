@@ -18,6 +18,9 @@ substitutions:
   _RELEASE: dev
   _E2S_VERSION: "0.17.0"
   _PREFETCH_MODEL: "true"
+  _PREFETCH_MODELS: FCN,DLWP,PrecipitationAFNO
+  _EARTH2STUDIO_EXTRAS: fcn,dlwp,precip-afno,data,utils
+  _EARTH2STUDIO_IMPORT_CHECK: 'from earth2studio.models.px import FCN, DLWP; from earth2studio.models.dx import PrecipitationAFNO'
 
 options:
   machineType: E2_HIGHCPU_32
@@ -33,7 +36,10 @@ steps:
     args:
       - build
       - --build-arg=EARTH2STUDIO_VERSION=${_E2S_VERSION}
+      - --build-arg=EARTH2STUDIO_EXTRAS=${_EARTH2STUDIO_EXTRAS}
+      - --build-arg=EARTH2STUDIO_IMPORT_CHECK=${_EARTH2STUDIO_IMPORT_CHECK}
       - --build-arg=PREFETCH_MODEL=${_PREFETCH_MODEL}
+      - --build-arg=PREFETCH_MODELS=${_PREFETCH_MODELS}
       - -f=docker/Dockerfile
       - -t=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_RELEASE}
       - .

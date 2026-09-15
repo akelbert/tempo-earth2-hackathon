@@ -1,8 +1,9 @@
 """Helpers for the TEMPO x Earth-2 hackathon workshop notebooks.
 
 This package exists so the workshop notebooks stay readable. Everything here is
-plain xarray/numpy/torch and can be imported and tested without a GPU; only
-:mod:`tempo_earth2.forecast` needs Earth2Studio, and it imports it lazily.
+plain xarray/numpy/torch and can be imported and tested without a GPU;
+:mod:`tempo_earth2.forecast` imports Earth2Studio lazily inside the functions
+that need it.
 """
 
 __version__ = "0.1.0"

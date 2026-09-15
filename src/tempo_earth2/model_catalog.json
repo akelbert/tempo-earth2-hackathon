@@ -1,22 +1,22 @@
 {
   "schema_version": 1,
-  "updated_utc": "2026-09-09T00:00:00Z",
+  "updated_utc": "2026-09-10T20:30:00Z",
   "deployment_profile": {
     "gpu": "NVIDIA L4",
     "gpu_memory_gb": 24,
-    "policy": "A model is advertised for live attendee use only after its exact image has completed the L4 benchmark. Candidate and precomputed entries are visible for project planning, but are not event-day promises."
+    "policy": "A model is advertised for live attendee use only when its checkpoint and dependencies are baked into the exact release image and that digest has passed the NVIDIA L4 benchmark without runtime checkpoint downloads. Reference and conditional entries are not installed event-day capabilities."
   },
-  "candidate_build": {
+  "model_stack_validation": {
     "earth2studio_requested_ref": "0.17.0",
     "earth2studio_resolved_commit": "d027d61277229081f9e11c74638260f2ade67631",
     "earth2studio_reported_version": "0.17.0rc0",
-    "local_image_id": "sha256:209cf12bc50494b2c7ac4119ae350ecef69cee3764c2afb8f17536263ac90411",
-    "registry_image_digest": "us-central1-docker.pkg.dev/cf-drupal-dev/tempo-earth2-dev/earth2-lab@sha256:54c0346e09833c63d7143ec346fdea2d7c7fe087abba7792889a6577237bf6de",
-    "cloud_build_id": "b1c73892-e6b1-462f-952d-2187a1f798e7",
-    "workstation_gpu": "NVIDIA GeForce RTX 2080 SUPER",
-    "workstation_gpu_memory_gb": 7.61,
-    "validated_utc_date": "2026-09-09",
-    "status": "published and workstation-passed; L4 promotion test pending"
+    "registry_image_digest": "us-central1-docker.pkg.dev/cf-drupal-dev/tempo-earth2-dev/earth2-lab@sha256:323f29a4ebd02191f7b510acc85973e4300938ebf761f1ea301bb0bbfeb2d89a",
+    "cloud_build_id": "73ccec98-6f65-409a-bed2-6224023e4cd8",
+    "target_gpu": "NVIDIA L4",
+    "target_gpu_memory_gb": 22.03,
+    "validated_utc_date": "2026-09-10",
+    "runtime_checkpoint_cache_growth_gb": 0.0,
+    "status": "passed in workshop-20260910-rc1; each later release digest must repeat the L4 gate and record its result in releases/"
   },
   "models": [
     {
@@ -44,6 +44,15 @@
       "checkpoint_source": "https://huggingface.co/nvidia/fourcastnet1",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/modules/generated/models/px/earth2studio.models.px.FCN.html",
       "science_uses": ["winds for plume transport", "weather context", "short forecasts"],
+      "l4_validation": {
+        "status": "passed",
+        "nsteps": 1,
+        "load_seconds": 47.95,
+        "workflow_seconds": 3.2,
+        "peak_gpu_gb": 1.02,
+        "checkpoint_cache_growth_gb": 0.0,
+        "requested_variables_returned": ["u10m", "v10m", "t2m", "msl"]
+      },
       "notes": "Validated in the deployed L4 environment and used by the introductory TEMPO transport notebook."
     },
     {
@@ -51,47 +60,48 @@
       "name": "DLWP",
       "earth2studio_class": "DLWP",
       "kind": "global weather forecast",
-      "tier": "candidate",
-      "live_inference": false,
+      "tier": "guaranteed",
+      "live_inference": true,
       "gpu_required": true,
       "extra": "dlwp",
+      "checkpoint_source": "ngc://models/nvidia/modulus/modulus_dlwp_cubesphere@v0.2",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/modules/generated/models/px/earth2studio.models.px.DLWP.html",
       "science_uses": ["weather-model comparison", "forecast verification"],
-      "promotion_gate": "Build the candidate image, review checkpoint terms, and pass a one-step L4 benchmark without runtime downloads.",
-      "workstation_validation": {
+      "l4_validation": {
         "status": "passed",
         "nsteps": 1,
-        "cached_load_seconds": 10.52,
-        "workflow_seconds": 3.0,
+        "load_seconds": 1.87,
+        "workflow_seconds": 1.4,
         "peak_gpu_gb": 0.53,
+        "checkpoint_cache_growth_gb": 0.0,
         "requested_variables_returned": ["t2m"]
       },
-      "notes": "A practical second prognostic candidate; it is not installed in the event image yet."
+      "notes": "Installed with its checkpoint baked into the release image and validated for live one-step inference on the attendee L4."
     },
     {
       "id": "precipitation-afno",
       "name": "Precipitation AFNO",
       "earth2studio_class": "PrecipitationAFNO",
       "kind": "diagnostic precipitation model",
-      "tier": "candidate",
-      "live_inference": false,
+      "tier": "guaranteed",
+      "live_inference": true,
       "gpu_required": true,
       "extra": "precip-afno",
       "checkpoint_source": "ngc://models/nvidia/modulus/modulus_diagnostics@v0.1",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/modules/generated/models/dx/earth2studio.models.dx.PrecipitationAFNO.html",
       "science_uses": ["storms", "flood context", "wetland response"],
-      "promotion_gate": "Review NGC checkpoint terms and pass the coupled FCN-to-diagnostic L4 benchmark.",
-      "workstation_validation": {
+      "l4_validation": {
         "status": "passed",
         "workflow": "FCN -> PrecipitationAFNO",
         "nsteps": 1,
-        "cached_model_load_seconds": 2.96,
-        "workflow_seconds": 3.52,
+        "cached_model_load_seconds": 5.0,
+        "workflow_seconds": 2.29,
         "peak_gpu_gb": 1.36,
         "output_variable": "tp",
-        "finite_fraction": 1.0
+        "finite_fraction": 1.0,
+        "checkpoint_cache_growth_gb": 0.0
       },
-      "notes": "Its 20 inputs match FCN's output fields, so it can add six-hour accumulated precipitation to the guaranteed forecast. Earth2Studio 0.17 explicitly marks PrecipitationAFNOv2 as worse and slated for deprecation; v2 is therefore excluded."
+      "notes": "Installed with its checkpoint baked into the release image. Its 20 inputs match FCN's output fields, so it adds six-hour accumulated precipitation to the live FCN forecast. Earth2Studio 0.17 marks PrecipitationAFNOv2 as worse and slated for deprecation; v2 is excluded."
     },
     {
       "id": "solar-radiation-afno",
@@ -111,52 +121,52 @@
       "name": "StormCast",
       "earth2studio_class": "StormCast",
       "kind": "regional convection-resolving forecast",
-      "tier": "precomputed",
+      "tier": "reference",
       "live_inference": false,
       "gpu_required": true,
       "extra": "stormcast",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/modules/generated/models/px/earth2studio.models.px.StormCast.html",
       "science_uses": ["extreme storms", "high-resolution downscaling", "flood-producing weather"],
-      "notes": "The published workflow is substantially heavier than the 24 GB L4 attendee profile; provide selected outputs, not an event-day checkpoint download."
+      "notes": "Not installed. The published workflow is substantially heavier than the 24 GB L4 attendee profile; use it only as a project direction unless separate hardware is approved."
     },
     {
       "id": "dlesym",
       "name": "DLESyM",
       "earth2studio_class": "DLESyM",
       "kind": "coupled seasonal/climate model",
-      "tier": "precomputed",
+      "tier": "reference",
       "live_inference": false,
       "gpu_required": true,
       "extra": "dlesym",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/examples/06_seasonal/03_dlesym_climate.html",
       "science_uses": ["seasonal scenarios", "climate variability", "ocean-atmosphere context"],
-      "notes": "Use curated output slices to introduce seasonal/climate questions without claiming interactive L4 inference."
+      "notes": "Not installed. Use this catalog entry to plan seasonal/climate work that will run on separately validated hardware."
     },
     {
       "id": "aurora",
       "name": "Aurora",
       "earth2studio_class": "Aurora",
       "kind": "foundation weather model",
-      "tier": "precomputed",
+      "tier": "reference",
       "live_inference": false,
       "gpu_required": true,
       "extra": "aurora",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/modules/generated/models/px/earth2studio.models.px.Aurora.html",
       "science_uses": ["weather-model comparison", "foundation-model exploration"],
-      "notes": "Earth2Studio documents a memory profile above the attendee L4; expose reviewed outputs or a separate high-memory service."
+      "notes": "Not installed. Earth2Studio documents a memory profile above the attendee L4; it requires a separate high-memory service."
     },
     {
       "id": "fcn3",
       "name": "FourCastNet 3",
       "earth2studio_class": "FCN3",
       "kind": "global weather forecast",
-      "tier": "precomputed",
+      "tier": "reference",
       "live_inference": false,
       "gpu_required": true,
       "extra": "fcn3",
       "documentation": "https://nvidia.github.io/earth2studio/v/0.17.0/modules/generated/models/px/earth2studio.models.px.FCN3.html",
       "science_uses": ["modern weather forecasting", "model intercomparison"],
-      "notes": "Its documented hardware profile is far above one 24 GB L4."
+      "notes": "Not installed. Its documented hardware profile is far above one 24 GB L4."
     }
   ]
 }

@@ -53,6 +53,9 @@ flox==0.11.2
 # included in the attendee image so that a curious attendee can pull their own
 # granule, but the event-day path reads the staged copy from Cloud Storage.
 earthaccess==0.18.0
+# NASA Harmony performs server-side temporal, spatial, and variable subsetting
+# before TEMPO products are downloaded into an attendee's persistent workspace.
+harmony-py==1.6.0
 
 # --- Cloud Storage -----------------------------------------------------------
 gcsfs==2026.8.0

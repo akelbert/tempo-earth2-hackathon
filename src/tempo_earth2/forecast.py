@@ -16,13 +16,23 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-#: Live prognostic models guaranteed by the released attendee image. This is
-#: intentionally narrower than ``model_catalog.json``: catalog candidates are
-#: useful for planning, but an attendee-facing API must not advertise an extra
-#: that was never installed or a model that did not pass the L4 benchmark.
-SUPPORTED_MODELS: dict[str, str] = {
+#: Live prognostic models installed in the attendee image and validated on the
+#: exact NVIDIA L4 deployment profile.
+SUPPORTED_PROGNOSTICS: dict[str, str] = {
     "FCN": "fcn",
+    "DLWP": "dlwp",
 }
+
+#: Live diagnostic models installed in the attendee image. Diagnostics consume
+#: another model's fields, so they are deliberately not accepted by
+#: :func:`run_forecast` as though they were prognostics.
+SUPPORTED_DIAGNOSTICS: dict[str, str] = {
+    "PrecipitationAFNO": "precip-afno",
+}
+
+#: Backwards-compatible alias for notebooks written before the prognostic and
+#: diagnostic inventories were separated.
+SUPPORTED_MODELS = SUPPORTED_PROGNOSTICS
 
 #: Near-surface and boundary-layer fields relevant to NO2 transport. Requesting
 #: a subset keeps the forecast Zarr around 10x smaller than the full model state.
@@ -94,12 +104,11 @@ def steps_to_cover(init_time: datetime, valid_time: datetime, timestep_hours: in
 
 def load_model(model_name: str = "FCN"):
     """Load an Earth2Studio prognostic model from its default package."""
-    if model_name not in SUPPORTED_MODELS:
+    if model_name not in SUPPORTED_PROGNOSTICS:
         raise ValueError(
-            f"{model_name!r} is not guaranteed by the released workshop image. "
-            f"Live models: {', '.join(sorted(SUPPORTED_MODELS))}. "
-            "See tempo_earth2.catalog.model_entries() for candidates and "
-            "precomputed-only models."
+            f"{model_name!r} is not installed in the released workshop image. "
+            f"Live prognostics: {', '.join(sorted(SUPPORTED_PROGNOSTICS))}. "
+            "See tempo_earth2.catalog.model_entries() for reference-only models."
         )
     try:
         from earth2studio.models import px
@@ -133,10 +142,10 @@ def run_forecast(
     ----------
     init_time
         Model initialization time. Must be on the model timestep (00/06/12/18Z
-        for every model in :data:`SUPPORTED_MODELS`); use
+        for every model in :data:`SUPPORTED_PROGNOSTICS`); use
         :func:`nearest_init_time` to snap an arbitrary time.
     nsteps
-        Number of forecast steps. FCN steps are 6 hours.
+        Number of forecast steps. FCN and DLWP steps are 6 hours.
     variables
         Output variables to keep. Restricting this is the single most effective
         way to keep the forecast store small.
@@ -237,7 +246,7 @@ def _as_timedelta(values: np.ndarray) -> np.ndarray:
         return values
     if np.issubdtype(values.dtype, np.integer) and values.size > 1:
         step = int(np.min(np.diff(values.astype("int64"))))
-        # Every model in SUPPORTED_MODELS steps in whole hours, so a step of a
+        # Every model in SUPPORTED_PROGNOSTICS steps in whole hours, so a step of a
         # few units is hours and a step of billions is nanoseconds.
         unit = "h" if abs(step) < 1000 else "ns"
         return values.astype(f"timedelta64[{unit}]")

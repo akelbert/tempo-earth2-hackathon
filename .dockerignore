@@ -20,5 +20,6 @@ benchmark-results/
 # Documentation and infrastructure that the runtime does not need.
 *.md
 !README.md
+!THIRD_PARTY_NOTICES.md
 terraform/
 helm/

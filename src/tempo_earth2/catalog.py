@@ -1,9 +1,10 @@
 """Machine-readable model and data catalogs for workshop discovery.
 
-The catalog distinguishes guaranteed event capabilities from candidates and
-from large authoritative archives.  Keeping that distinction in data (rather
-than prose copied among notebooks) makes it difficult to accidentally promise
-an unvalidated model or imply that a tiny teaching extract is the whole archive.
+The catalog distinguishes guaranteed event capabilities from reference-only
+and conditional entries, as well as large authoritative archives. Keeping that
+distinction in data (rather than prose copied among notebooks) makes it
+difficult to accidentally promise an unavailable model or imply that a tiny
+teaching extract is the whole archive.
 """
 
 from __future__ import annotations

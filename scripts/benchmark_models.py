@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-"""Benchmark candidate Earth2Studio prognostic models on the target GPU.
+"""Benchmark installed Earth2Studio prognostic models on the target GPU.
 
 This is a release-engineering command, not an attendee notebook. Run it in a
-candidate image on the same L4 profile used by JupyterHub. It records failures,
+release image on the same L4 profile used by JupyterHub. It records failures,
 runtime, peak allocated GPU memory, and checkpoint-cache growth as JSON. A
-candidate is not promoted in ``model_catalog.json`` merely because it imports.
+model is not advertised in ``model_catalog.json`` merely because it imports.
 
-Example (inside a candidate container with its model extras installed):
+Example (inside the release container with its model extras installed):
 
     python /opt/earth2/scripts/benchmark_models.py \
         --model FCN DLWP --init-time 2026-05-31T12:00 --output /tmp/models.json
@@ -36,7 +36,7 @@ def _cache_size(path: Path) -> int:
     return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
 
 
-def _load_candidate(name: str):
+def _load_model(name: str):
     from earth2studio.models import px
 
     cls = getattr(px, name)
@@ -46,7 +46,7 @@ def _load_candidate(name: str):
 def _model_names() -> dict[str, str]:
     return {
         entry["earth2studio_class"]: entry["id"]
-        for entry in model_entries(("guaranteed", "candidate"))
+        for entry in model_entries(("guaranteed",))
         if entry.get("earth2studio_class") and entry["kind"].endswith("weather forecast")
     }
 
@@ -66,7 +66,7 @@ def main() -> int:
     import torch
 
     if not torch.cuda.is_available():
-        raise SystemExit("CUDA is unavailable; candidate promotion requires the target GPU")
+        raise SystemExit("CUDA is unavailable; release validation requires the target GPU")
 
     cache = Path(
         os.environ.get("EARTH2STUDIO_MODEL_CACHE", Path.home() / ".cache/earth2studio")
@@ -85,7 +85,7 @@ def main() -> int:
             "init_time": init_time.isoformat(),
         }
         try:
-            model = _load_candidate(name)
+            model = _load_model(name)
             loaded = time.perf_counter()
             result = run_forecast(
                 init_time,

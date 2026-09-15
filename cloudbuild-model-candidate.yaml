@@ -1,4 +1,4 @@
-# Build and push a non-deployable Earth2Studio candidate image.
+# Build and push a digest-testable Earth2Studio release-candidate image.
 #
 # This deliberately does not update JupyterHub. The resulting digest is an
 # input to the target-L4 benchmark; only a reviewed, passing model is promoted
@@ -12,6 +12,7 @@ substitutions:
   _E2S_VERSION: "0.17.0"
   _EARTH2STUDIO_EXTRAS: fcn,dlwp,precip-afno,data,utils
   _EARTH2STUDIO_IMPORT_CHECK: 'from earth2studio.models.px import FCN, DLWP; from earth2studio.models.dx import PrecipitationAFNO'
+  _PREFETCH_MODELS: FCN,DLWP,PrecipitationAFNO
 
 options:
   machineType: E2_HIGHCPU_32
@@ -29,7 +30,8 @@ steps:
       - --build-arg=EARTH2STUDIO_VERSION=${_E2S_VERSION}
       - --build-arg=EARTH2STUDIO_EXTRAS=${_EARTH2STUDIO_EXTRAS}
       - --build-arg=EARTH2STUDIO_IMPORT_CHECK=${_EARTH2STUDIO_IMPORT_CHECK}
-      - --build-arg=PREFETCH_MODEL=false
+      - --build-arg=PREFETCH_MODEL=true
+      - --build-arg=PREFETCH_MODELS=${_PREFETCH_MODELS}
       - -f=docker/Dockerfile
       - -t=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${_CANDIDATE_RELEASE}
       - .

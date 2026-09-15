@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: earth2-model-benchmark
+  name: "${JOB_NAME}"
   namespace: "${NAMESPACE}"
   labels:
     app.kubernetes.io/name: earth2-model-benchmark
@@ -25,6 +25,7 @@ spec:
           value: jupyter-gpu
           effect: NoSchedule
       securityContext:
+        runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 100
         fsGroup: 100
@@ -34,7 +35,7 @@ spec:
         - name: benchmark
           image: "${CANDIDATE_IMAGE_DIGEST}"
           imagePullPolicy: IfNotPresent
-          command: ["bash", "-ceu", "--"]
+          command: ["bash", "-ce", "--"]
           args:
             - |
               python /opt/earth2/scripts/benchmark_models.py \
@@ -44,13 +45,12 @@ spec:
               python /opt/earth2/scripts/benchmark_precipitation.py \
                 --init-time 2026-05-31T12:00 \
                 --output /results/precipitation-benchmark.json
+              python -c 'import json; from pathlib import Path; prognostics=json.loads(Path("/results/model-benchmark.json").read_text())["records"]; precipitation=json.loads(Path("/results/precipitation-benchmark.json").read_text())["record"]; records=[*prognostics, precipitation]; assert all(record["status"] == "passed" for record in records), records; assert all(record["gpu"] == "NVIDIA L4" for record in records), records; assert all(record["cache_growth_gb"] == 0 for record in records), "release image downloaded a checkpoint at runtime"; print("Release gate passed: NVIDIA L4, successful inference, zero checkpoint-cache growth")'
               echo '=== model-benchmark.json ==='
               cat /results/model-benchmark.json
               echo '=== precipitation-benchmark.json ==='
               cat /results/precipitation-benchmark.json
           env:
-            - name: EARTH2STUDIO_MODEL_CACHE
-              value: /cache/models
             - name: EARTH2STUDIO_DATA_CACHE
               value: /cache/data
           resources:

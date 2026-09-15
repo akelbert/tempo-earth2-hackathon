@@ -45,7 +45,7 @@ ARG NB_GID=100
 # model has its own license and must be reviewed before redistribution; turn it
 # on for the event image once that review is done.
 ARG PREFETCH_MODEL=false
-ARG PREFETCH_MODEL_NAME=FCN
+ARG PREFETCH_MODELS=FCN
 
 ENV DEBIAN_FRONTEND=noninteractive \
     SHELL=/bin/bash \
@@ -143,7 +143,7 @@ RUN if ! python -c "import transformer_engine.pytorch" 2>/tmp/te-check.log; then
 # earth2studio`: it is what actually walks the physicsnemo model registry and
 # exercises the torch/cuBLAS ABI pairing (see the transformer_engine note
 # above), and a bare package import does not touch that path.
-RUN python -c "import torch, earth2studio, jupyterhub, jupyterlab, glue_jupyter, xarray, cartopy; \
+RUN python -c "import torch, earth2studio, jupyterhub, jupyterlab, glue_jupyter, xarray, cartopy, harmony; \
 from earth2studio.models.px import FCN; \
 print('earth2studio', earth2studio.__version__); \
 print('torch', torch.__version__, 'cuda', torch.version.cuda); \
@@ -183,6 +183,7 @@ COPY src/tempo_earth2 /opt/earth2/lib/tempo_earth2
 COPY notebooks/*.ipynb /opt/earth2/notebooks/
 COPY scripts/ /opt/earth2/scripts/
 COPY docker/bin/ /opt/earth2/bin/
+COPY THIRD_PARTY_NOTICES.md /opt/earth2/THIRD_PARTY_NOTICES.md
 
 RUN chmod -R a+rx /opt/earth2/bin \
     && python -c "import tempo_earth2; print('tempo_earth2', tempo_earth2.__version__)"
@@ -199,12 +200,12 @@ RUN printf '%s\n' \
 
 # ---------------------------------------------------------------------------
 # Optional: bake the model checkpoint. Turning this on removes the event-day
-# dependency on Hugging Face entirely, at the cost of image size. The selected
-# nvidia/fourcastnet1 checkpoint is published for commercial and non-commercial
-# use under Apache-2.0; re-check the model card if PREFETCH_MODEL_NAME changes.
+# dependency on external model registries, at the cost of image size. The
+# reviewed artifact sources and governing terms are recorded in
+# THIRD_PARTY_NOTICES.md; re-check them whenever PREFETCH_MODELS changes.
 # ---------------------------------------------------------------------------
 RUN if [ "${PREFETCH_MODEL}" = "true" ]; then \
-        python /opt/earth2/scripts/prefetch_models.py --model "${PREFETCH_MODEL_NAME}" \
+        python /opt/earth2/scripts/prefetch_models.py --models "${PREFETCH_MODELS}" \
         && chmod -R a+rX /opt/earth2/cache; \
     fi
 
