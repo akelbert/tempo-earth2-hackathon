@@ -577,7 +577,10 @@ if COLUMN_PAIRS:
                        label=f"{scan_mid[k[1]]:%H:%M}Z")
         hi = np.nanmax([np.nanmax(column_fields[k][0].values) for k in keys]) / 1e15
         ax.plot([0, hi], [0, hi], "k--", lw=1)
-        r = column_summary.loc[label, "r"] if "r" in column_summary else np.nan
+        # Computed from the points on this panel, so the cell stands on its own.
+        pooled_obs = np.concatenate([column_fields[k][0].values.ravel() for k in keys])
+        pooled_mod = np.concatenate([column_fields[k][1].values.ravel() for k in keys])
+        r = stats(pooled_obs, pooled_mod).get("r", np.nan)
         ax.set_title(f"{label}\nr = {r:.2f}", fontsize=10)
         ax.set_xlabel("TEMPO ($10^{15}$ molecules cm$^{-2}$)")
         ax.set_ylabel("model")
